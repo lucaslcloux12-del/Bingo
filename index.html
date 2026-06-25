@@ -3,105 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorteador de Bingo</title>
+    <title>Bingo Animado</title>
     <style>
+        /* BASE E LAYOUT */
         body {
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: white;
             padding: 20px;
             text-align: center;
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #f8f9fa;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 15px 25px rgba(0,0,0,0.5);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h2, h3, h4 { margin-top: 0; }
+
+        /* BOTÕES */
         button {
-            padding: 10px 15px;
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            color: white;
+            border: none;
+            padding: 12px 20px;
             margin: 5px;
             cursor: pointer;
             font-size: 16px;
-        }
-        #tela-jogo { display: none; }
-        .numero-atual {
-            font-size: 48px;
             font-weight: bold;
-            color: #e63946;
-        }
-        .historico-container {
-            background-color: #f1faee;
-            padding: 15px;
             border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 75, 43, 0.6);
+        }
+        button:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+        button:disabled {
+            background: #555;
+            box-shadow: none;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+        }
+
+        /* INPUT */
+        input[type="number"] {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            text-align: center;
+            width: 120px;
+        }
+
+        /* O GLOBO E AS ANIMAÇÕES */
+        .globo-container {
+            margin: 20px auto;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), rgba(0,0,0,0.6));
+            border: 4px solid #fff;
+            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* O número gigante que aparece em cima do globo após o sorteio */
+        .numero-atual {
+            position: absolute;
+            font-size: 64px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        /* Bolinhas que ficam dentro do globo */
+        .bolinha-interna {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            box-shadow: inset -2px -2px 5px rgba(0,0,0,0.5);
+        }
+
+        /* Animação do globo girando e bolinhas tremendo */
+        .girando {
+            animation: spinGlobo 0.5s linear infinite;
+        }
+        .girando .bolinha-interna {
+            animation: tremelique 0.2s infinite alternate ease-in-out;
+        }
+        .girando .numero-atual {
+            display: none; /* Esconde o número enquanto gira */
+        }
+
+        @keyframes spinGlobo {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes tremelique {
+            0% { transform: translate(-15px, -15px); }
+            25% { transform: translate(20px, 5px); }
+            50% { transform: translate(-10px, 20px); }
+            75% { transform: translate(15px, -20px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* CAIXA DE HISTÓRICO */
+        .historico-container {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 12px;
             text-align: left;
+            margin-top: 20px;
+            min-height: 80px;
         }
         .numero-sorteado {
             display: inline-block;
-            padding: 5px 10px;
-            background-color: #1d3557;
+            padding: 8px 12px;
+            background-color: #11998e;
             color: white;
-            border-radius: 5px;
+            border-radius: 6px;
             font-weight: bold;
             margin: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            animation: fadeIn 0.3s ease-in;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        #tela-jogo { display: none; }
     </style>
 </head>
 <body>
 
-    <h2>🎱 Menu de Bingo</h2>
+    <div class="container">
+        <h2>🎱 Sorteador de Bingo</h2>
 
-    <!-- TELA DO MENU INICIAL -->
-    <div id="tela-menu">
-        <h3>Escolha o tipo de Bingo:</h3>
-        <button onclick="iniciarJogo(50)">1 a 50</button>
-        <button onclick="iniciarJogo(75)">1 a 75</button>
-        <button onclick="iniciarJogo(100)">1 a 100</button>
-        <button onclick="mostrarPersonalizado()">Personalizado</button>
+        <div id="tela-menu">
+            <h3>Escolha o tipo de Bingo:</h3>
+            <div style="margin-bottom: 20px;">
+                <button onclick="iniciarJogo(50)">1 a 50</button>
+                <button onclick="iniciarJogo(75)">1 a 75</button>
+                <button onclick="iniciarJogo(100)">1 a 100</button>
+                <button onclick="mostrarPersonalizado()">Personalizado</button>
+            </div>
 
-        <div id="div-personalizado" style="display: none; margin-top: 15px;">
-            <input type="number" id="input-limite" placeholder="Ex: 200" style="padding: 10px; font-size: 16px;">
-            <button onclick="iniciarPersonalizado()">Começar</button>
+            <div id="div-personalizado" style="display: none;">
+                <input type="number" id="input-limite" placeholder="Ex: 200">
+                <button onclick="iniciarPersonalizado()">Começar</button>
+            </div>
+        </div>
+
+        <div id="tela-jogo">
+            <button onclick="voltarMenu()" style="background: #555; margin-bottom: 10px; box-shadow: none;">⬅️ Voltar ao Menu</button>
+            
+            <h3 id="titulo-jogo" style="color: #00d2ff;"></h3>
+            
+            <div id="globo" class="globo-container">
+                <div id="numero-atual" class="numero-atual">?</div>
+                </div>
+            
+            <button id="btn-sortear" onclick="sortearNumero()" style="padding: 15px 30px; font-size: 20px; background: linear-gradient(to right, #11998e, #38ef7d); box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);">
+                Sortear Número
+            </button>
+
+            <div class="historico-container">
+                <h4 style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 10px;">
+                    Números Sorteados (<span id="contador">0</span>/<span id="total">0</span>):
+                </h4>
+                <div id="lista-sorteados"></div>
+            </div>
         </div>
     </div>
 
-    <!-- TELA DE SORTEIO -->
-    <div id="tela-jogo">
-        <button onclick="voltarMenu()" style="margin-bottom: 20px;">⬅️ Voltar ao Menu</button>
-        
-        <h3 id="titulo-jogo"></h3>
-        
-        <button onclick="sortearNumero()" style="padding: 10px 20px; font-size: 18px; background-color: #4CAF50; color: white; border: none; border-radius: 5px;">
-            Sortear Número
-        </button>
-        
-        <div style="margin: 20px 0;">
-            <h4>Número Sorteado:</h4>
-            <div id="numero-atual" class="numero-atual">-</div>
-        </div>
-
-        <hr style="margin: 30px 0;">
-
-        <!-- CAIXA DO HISTÓRICO -->
-        <div class="historico-container">
-            <h4 style="margin-top: 0;">Números já sorteados (<span id="contador">0</span>/<span id="total">0</span>):</h4>
-            <div id="lista-sorteados"></div>
-        </div>
-    </div>
-
-    <!-- LÓGICA DO BINGO -->
     <script>
         let maximo = null;
         let sorteados = [];
+        let sorteando = false; // Controle para evitar duplo clique
+
+        // Cores para as bolinhas de enfeite
+        const cores = ['#ff416c', '#00d2ff', '#f9d423', '#38ef7d', '#8e2de2'];
 
         function iniciarJogo(limite) {
             maximo = limite;
             sorteados = [];
             
-            // Troca as telas
             document.getElementById('tela-menu').style.display = 'none';
             document.getElementById('tela-jogo').style.display = 'block';
             
-            // Atualiza os textos
-            document.getElementById('titulo-jogo').innerText = `Bingo de 1 a ${maximo}`;
+            document.getElementById('titulo-jogo').innerText = `Bingo (1 a ${maximo})`;
             document.getElementById('total').innerText = maximo;
-            document.getElementById('numero-atual').innerText = '-';
+            document.getElementById('numero-atual').innerText = '?';
             
+            criarBolinhasDecorativas();
             atualizarHistorico();
         }
 
@@ -125,35 +244,80 @@
             document.getElementById('input-limite').value = '';
         }
 
+        // Gera bolinhas de enfeite dentro do globo
+        function criarBolinhasDecorativas() {
+            const globo = document.getElementById('globo');
+            // Remove bolinhas antigas (mantém apenas o texto do numero)
+            globo.innerHTML = '<div id="numero-atual" class="numero-atual">?</div>';
+            
+            for(let i = 0; i < 15; i++) {
+                let bolinha = document.createElement('div');
+                bolinha.className = 'bolinha-interna';
+                bolinha.style.backgroundColor = cores[Math.floor(Math.random() * cores.length)];
+                
+                // Posições aleatórias dentro do globo
+                let posX = Math.floor(Math.random() * 80) + 10;
+                let posY = Math.floor(Math.random() * 80) + 10;
+                
+                bolinha.style.left = posX + '%';
+                bolinha.style.top = posY + '%';
+                
+                // Adiciona atraso diferente na animação para parecer bagunçado
+                bolinha.style.animationDelay = (Math.random() * 0.5) + 's';
+                
+                globo.appendChild(bolinha);
+            }
+        }
+
         function sortearNumero() {
+            // Se já estiver rodando a animação, não faz nada
+            if (sorteando) return; 
+
             if (sorteados.length >= maximo) {
                 alert("Todos os números já foram sorteados!");
                 return;
             }
 
+            // Inicia o bloqueio do botão e a animação
+            sorteando = true;
+            document.getElementById('btn-sortear').disabled = true;
+            document.getElementById('btn-sortear').innerText = "Sorteando...";
+            
+            const globo = document.getElementById('globo');
+            globo.classList.add('girando'); // Inicia o giro
+
+            // Acha o número em "background" (instantâneo para o PC, mas esconde do usuário)
             let novoSorteio;
-            // Gera um número e verifica se já saiu
             do {
                 novoSorteio = Math.floor(Math.random() * maximo) + 1;
             } while (sorteados.includes(novoSorteio));
 
-            // Salva no histórico e ordena do menor pro maior
+            // Salva na lista e ordena
             sorteados.push(novoSorteio);
             sorteados.sort((a, b) => a - b);
 
-            // Mostra na tela
-            document.getElementById('numero-atual').innerText = novoSorteio;
-            atualizarHistorico();
+            // Aguarda 1.2 segundos (1200ms) para revelar o resultado
+            setTimeout(() => {
+                globo.classList.remove('girando'); // Para a animação
+                
+                // Atualiza a tela com o número sorteado
+                document.getElementById('numero-atual').innerText = novoSorteio;
+                atualizarHistorico();
+
+                // Libera o botão novamente
+                sorteando = false;
+                document.getElementById('btn-sortear').disabled = false;
+                document.getElementById('btn-sortear').innerText = "Sortear Número";
+                
+            }, 1200);
         }
 
         function atualizarHistorico() {
             document.getElementById('contador').innerText = sorteados.length;
             
-            // Transforma o array de números em caixinhas na tela
             const listaHtml = sorteados.map(num => `<span class="numero-sorteado">${num}</span>`).join('');
             document.getElementById('lista-sorteados').innerHTML = listaHtml;
         }
     </script>
 </body>
 </html>
-
