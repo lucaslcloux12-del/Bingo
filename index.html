@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo 3D - Sincronizado</title>
+    <title>Bingo 3D Realtime - Corrigido</title>
     <style>
         /* ====== BASE E LAYOUT ====== */
         body {
@@ -69,7 +69,6 @@
         .btn-sucesso { background: linear-gradient(to right, #11998e, #38ef7d); }
         .btn-acao { padding: 8px 12px; font-size: 14px; margin: 0; }
         
-        /* Botão de lixeira pequeno */
         .btn-lixeira {
             background: transparent;
             border: 1px solid #ff4b2b;
@@ -191,9 +190,7 @@
         <!-- TELA 1: LOGIN DE USUÁRIO -->
         <div id="tela-login" class="tela ativa">
             <h3>Selecione sua conta:</h3>
-            <div id="lista-usuarios" style="margin-top: 20px;">
-                <!-- Usuários gerados pelo JS -->
-            </div>
+            <div id="lista-usuarios" style="margin-top: 20px;"></div>
         </div>
 
         <!-- TELA 2: MENU PRINCIPAL -->
@@ -226,9 +223,7 @@
             <button onclick="mudarTela('tela-menu')" class="btn-secundario" style="margin-bottom: 20px;">⬅️ Voltar ao Menu</button>
             
             <h3>Seu Histórico de Jogos</h3>
-            <div id="lista-jogos-salvos" style="max-height: 400px; overflow-y: auto; margin-top: 20px;">
-                <!-- Jogos injetados pelo JS -->
-            </div>
+            <div id="lista-jogos-salvos" style="max-height: 400px; overflow-y: auto; margin-top: 20px;"></div>
         </div>
 
         <!-- TELA 4: O JOGO ROLANDO -->
@@ -268,7 +263,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // CONFIGURAÇÃO DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyAfG1gFI4SoEdttmhwORZt92_9bgqJcsgw",
             authDomain: "call-9cc3b.firebaseapp.com",
@@ -295,23 +289,27 @@
             const data = snapshot.val();
             window.todosOsJogos = data ? Object.values(data) : [];
             
-            // Se estiver na tela de histórico, atualiza a lista
+            // Correção 1: Garante que todo jogo vindo do Firebase tenha a propriedade de array iniciada
+            window.todosOsJogos.forEach(j => {
+                if (!j.sorteados) j.sorteados = [];
+            });
+            
             if (document.getElementById('tela-historico').classList.contains('ativa')) {
                 window.renderizarHistoricoJogos();
             }
 
-            // Se o jogo aberto no momento foi atualizado (por outro aparelho), atualiza a tela instantaneamente
-            if (window.jogoAtual) {
+            // Correção 2: NÃO interrompe o jogo com dados externos se este dispositivo estiver no meio da animação do giro
+            if (window.jogoAtual && !window.sorteando) {
                 const jogoAtualizado = window.todosOsJogos.find(j => j.id === window.jogoAtual.id);
                 if (jogoAtualizado) {
                     window.jogoAtual = jogoAtualizado;
-                    if(!window.jogoAtual.sorteados) window.jogoAtual.sorteados = [];
                     window.atualizarPlacarSorteados();
                     window.verificarStatusBotao();
                     
-                    // Se houver números sorteados, atualiza a bola na tela
-                    if(window.jogoAtual.sorteados.length > 0 && !window.sorteando) {
+                    if (window.jogoAtual.sorteados.length > 0) {
                         document.getElementById('numero-atual').innerText = window.jogoAtual.sorteados[window.jogoAtual.sorteados.length - 1];
+                    } else {
+                        document.getElementById('numero-atual').innerText = '?';
                     }
                 }
             }
@@ -326,7 +324,8 @@
                 window.renderizarHistoricoJogos();
             }
             if (idTelaAlvo === 'tela-menu') {
-                window.jogoAtual = null; // Sai do modo de partida
+                window.jogoAtual = null; 
+                window.sorteando = false; // Destrava preventivamente ao voltar pro menu
             }
         }
 
@@ -365,11 +364,16 @@
                 dataCriacao: new Date().toLocaleString('pt-BR')
             };
 
-            // Salva o novo jogo no Firebase
-            set(ref(db, 'jogos/' + idGerado), novoJogo);
-            
-            window.jogoAtual = novoJogo;
-            window.carregarJogoNaTela(novoJogo);
+            // Correção 3: Usa catch para capturar erros de permissão de escrita do Firebase
+            set(ref(db, 'jogos/' + idGerado), novoJogo)
+                .then(() => {
+                    window.jogoAtual = novoJogo;
+                    window.carregarJogoNaTela(novoJogo);
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Erro crítico: Verifique se a aba 'Regras' do seu Realtime Database está definida como true para .read e .write.");
+                });
         }
 
         window.mostrarDivPersonalizado = function() {
@@ -395,7 +399,7 @@
             document.getElementById('titulo-jogo').innerText = `Bingo (1 a ${jogo.limite})`;
             document.getElementById('total').innerText = jogo.limite;
             
-            if (jogo.sorteados && jogo.sorteados.length > 0) {
+            if (jogo.sorteados.length > 0) {
                 document.getElementById('numero-atual').innerText = jogo.sorteados[jogo.sorteados.length - 1];
             } else {
                 document.getElementById('numero-atual').innerText = '?';
@@ -424,39 +428,48 @@
             const eixo = document.getElementById('eixo-bola');
             eixo.classList.add('girando');
 
-            // Garante número único
             let novoSorteio;
             do {
                 novoSorteio = Math.floor(Math.random() * window.jogoAtual.limite) + 1;
             } while (window.jogoAtual.sorteados.includes(novoSorteio));
 
-            // Atualiza array localmente primeiro
-            window.jogoAtual.sorteados.push(novoSorteio);
+            // Atualiza localmente para a animação rodar fluida
+            const copiaSorteados = [...window.jogoAtual.sorteados, novoSorteio];
 
-            // Manda o novo array de números para a nuvem
+            // Correção 4: Sincroniza via Promise e usa catch para destravar o botão caso a internet falhe ou o Firebase recuse
             update(ref(db, 'jogos/' + window.jogoAtual.id), {
-                sorteados: window.jogoAtual.sorteados
-            });
+                sorteados: copiaSorteados
+            })
+            .then(() => {
+                setTimeout(() => {
+                    eixo.classList.remove('girando');
+                    
+                    window.jogoAtual.sorteados = copiaSorteados;
+                    document.getElementById('numero-atual').innerText = novoSorteio;
+                    document.getElementById('numero-atual').style.opacity = '1';
+                    
+                    window.atualizarPlacarSorteados();
+                    window.verificarStatusBotao();
 
-            // Trava exata para a animação 3D do botão rodar
-            setTimeout(() => {
+                    window.sorteando = false;
+                }, 1200);
+            })
+            .catch(err => {
+                console.error("Erro ao salvar número:", err);
+                alert("O Firebase rejeitou o sorteio. Verifique suas regras de banco de dados.");
+                
+                // Força o destravamento total da interface em caso de falha de rede
                 eixo.classList.remove('girando');
-                
-                document.getElementById('numero-atual').innerText = novoSorteio;
                 document.getElementById('numero-atual').style.opacity = '1';
-                
-                window.atualizarPlacarSorteados();
                 window.verificarStatusBotao();
-
                 window.sorteando = false;
-            }, 1200);
+            });
         }
 
         window.atualizarPlacarSorteados = function() {
             const lista = window.jogoAtual.sorteados || [];
             document.getElementById('contador').innerText = lista.length;
             
-            // Ordena apenas visualmente
             const arrayOrdenado = [...lista].sort((a, b) => a - b);
             const listaHtml = arrayOrdenado.map(num => `<span class="numero-sorteado">${num}</span>`).join('');
             document.getElementById('lista-sorteados').innerHTML = listaHtml;
@@ -481,7 +494,7 @@
 
             const jogosDoUsuario = window.todosOsJogos
                 .filter(j => j.idUsuario === window.usuarioAtual.id)
-                .reverse(); // Do mais novo para o mais antigo
+                .reverse(); 
 
             if (jogosDoUsuario.length === 0) {
                 container.innerHTML = '<p style="color: #ccc;">Nenhum jogo encontrado.</p>';
@@ -520,16 +533,14 @@
             }
         }
 
-        // --- FUNÇÃO DA LIXEIRA ---
         window.excluirJogo = function(idDoJogo) {
             if (confirm("Tem certeza que deseja apagar este jogo? Esta ação não pode ser desfeita.")) {
-                remove(ref(db, 'jogos/' + idDoJogo));
+                remove(ref(db, 'jogos/' + idDoJogo)).catch(err => alert("Erro ao apagar: " + err));
             }
         }
 
         // --- INICIALIZAÇÃO DA PÁGINA ---
         window.renderizarUsuarios();
-
     </script>
 </body>
 </html>
