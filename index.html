@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteador de Bingo</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #f8f9fa;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #tela-jogo { display: none; }
+        .numero-atual {
+            font-size: 48px;
+            font-weight: bold;
+            color: #e63946;
+        }
+        .historico-container {
+            background-color: #f1faee;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left;
+        }
+        .numero-sorteado {
+            display: inline-block;
+            padding: 5px 10px;
+            background-color: #1d3557;
+            color: white;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🎱 Menu de Bingo</h2>
+
+    <!-- TELA DO MENU INICIAL -->
+    <div id="tela-menu">
+        <h3>Escolha o tipo de Bingo:</h3>
+        <button onclick="iniciarJogo(50)">1 a 50</button>
+        <button onclick="iniciarJogo(75)">1 a 75</button>
+        <button onclick="iniciarJogo(100)">1 a 100</button>
+        <button onclick="mostrarPersonalizado()">Personalizado</button>
+
+        <div id="div-personalizado" style="display: none; margin-top: 15px;">
+            <input type="number" id="input-limite" placeholder="Ex: 200" style="padding: 10px; font-size: 16px;">
+            <button onclick="iniciarPersonalizado()">Começar</button>
+        </div>
+    </div>
+
+    <!-- TELA DE SORTEIO -->
+    <div id="tela-jogo">
+        <button onclick="voltarMenu()" style="margin-bottom: 20px;">⬅️ Voltar ao Menu</button>
+        
+        <h3 id="titulo-jogo"></h3>
+        
+        <button onclick="sortearNumero()" style="padding: 10px 20px; font-size: 18px; background-color: #4CAF50; color: white; border: none; border-radius: 5px;">
+            Sortear Número
+        </button>
+        
+        <div style="margin: 20px 0;">
+            <h4>Número Sorteado:</h4>
+            <div id="numero-atual" class="numero-atual">-</div>
+        </div>
+
+        <hr style="margin: 30px 0;">
+
+        <!-- CAIXA DO HISTÓRICO -->
+        <div class="historico-container">
+            <h4 style="margin-top: 0;">Números já sorteados (<span id="contador">0</span>/<span id="total">0</span>):</h4>
+            <div id="lista-sorteados"></div>
+        </div>
+    </div>
+
+    <!-- LÓGICA DO BINGO -->
+    <script>
+        let maximo = null;
+        let sorteados = [];
+
+        function iniciarJogo(limite) {
+            maximo = limite;
+            sorteados = [];
+            
+            // Troca as telas
+            document.getElementById('tela-menu').style.display = 'none';
+            document.getElementById('tela-jogo').style.display = 'block';
+            
+            // Atualiza os textos
+            document.getElementById('titulo-jogo').innerText = `Bingo de 1 a ${maximo}`;
+            document.getElementById('total').innerText = maximo;
+            document.getElementById('numero-atual').innerText = '-';
+            
+            atualizarHistorico();
+        }
+
+        function mostrarPersonalizado() {
+            document.getElementById('div-personalizado').style.display = 'block';
+        }
+
+        function iniciarPersonalizado() {
+            const limite = parseInt(document.getElementById('input-limite').value);
+            if (limite > 1) {
+                iniciarJogo(limite);
+            } else {
+                alert("Por favor, insira um número válido (maior que 1).");
+            }
+        }
+
+        function voltarMenu() {
+            document.getElementById('tela-menu').style.display = 'block';
+            document.getElementById('tela-jogo').style.display = 'none';
+            document.getElementById('div-personalizado').style.display = 'none';
+            document.getElementById('input-limite').value = '';
+        }
+
+        function sortearNumero() {
+            if (sorteados.length >= maximo) {
+                alert("Todos os números já foram sorteados!");
+                return;
+            }
+
+            let novoSorteio;
+            // Gera um número e verifica se já saiu
+            do {
+                novoSorteio = Math.floor(Math.random() * maximo) + 1;
+            } while (sorteados.includes(novoSorteio));
+
+            // Salva no histórico e ordena do menor pro maior
+            sorteados.push(novoSorteio);
+            sorteados.sort((a, b) => a - b);
+
+            // Mostra na tela
+            document.getElementById('numero-atual').innerText = novoSorteio;
+            atualizarHistorico();
+        }
+
+        function atualizarHistorico() {
+            document.getElementById('contador').innerText = sorteados.length;
+            
+            // Transforma o array de números em caixinhas na tela
+            const listaHtml = sorteados.map(num => `<span class="numero-sorteado">${num}</span>`).join('');
+            document.getElementById('lista-sorteados').innerHTML = listaHtml;
+        }
+    </script>
+</body>
+</html>
+
