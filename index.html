@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo Animado</title>
+    <title>Bingo 3D</title>
     <style>
         /* BASE E LAYOUT */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            background: linear-gradient(135deg, #1f1c2c, #928dab);
             color: white;
             padding: 20px;
             text-align: center;
@@ -21,11 +21,11 @@
         }
 
         .container {
-            background-color: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+            background-color: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(15px);
             padding: 30px;
             border-radius: 15px;
-            box-shadow: 0 15px 25px rgba(0,0,0,0.5);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             max-width: 600px;
             width: 100%;
         }
@@ -44,14 +44,10 @@
             font-weight: bold;
             border-radius: 8px;
             transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
-            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
         }
         button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(255, 75, 43, 0.6);
-        }
-        button:active:not(:disabled) {
-            transform: translateY(1px);
         }
         button:disabled {
             background: #555;
@@ -60,7 +56,6 @@
             filter: grayscale(100%);
         }
 
-        /* INPUT */
         input[type="number"] {
             padding: 10px;
             font-size: 16px;
@@ -71,63 +66,72 @@
             width: 120px;
         }
 
-        /* O GLOBO E AS ANIMAÇÕES */
-        .globo-container {
-            margin: 20px auto;
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), rgba(0,0,0,0.6));
-            border: 4px solid #fff;
-            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.5);
+        /* PALCO 3D DA BOLA */
+        .palco-3d {
+            perspective: 800px; /* Define a profundidade do 3D */
+            width: 160px; 
+            height: 160px;
+            margin: 30px auto;
             position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        /* O número gigante que aparece em cima do globo após o sorteio */
-        .numero-atual {
+        /* Camadas da Bola */
+        .fundo-bola, .luz-sombra, .eixo-3d {
             position: absolute;
-            font-size: 64px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
-            z-index: 10;
-        }
-
-        /* Bolinhas que ficam dentro do globo */
-        .bolinha-interna {
-            position: absolute;
-            width: 25px;
-            height: 25px;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             border-radius: 50%;
-            box-shadow: inset -2px -2px 5px rgba(0,0,0,0.5);
         }
 
-        /* Animação do globo girando e bolinhas tremendo */
+        /* A cor vermelha de fundo que fica parada */
+        .fundo-bola {
+            background-color: #ff4b2b;
+        }
+
+        /* A luz e a sombra que ficam por cima de tudo para dar a ilusão redonda */
+        .luz-sombra {
+            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.5) 0%, transparent 40%),
+                        radial-gradient(circle at 65% 65%, transparent 40%, rgba(0,0,0,0.8) 100%);
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.6), 0 15px 25px rgba(0,0,0,0.4);
+            z-index: 10;
+            pointer-events: none; /* Deixa os cliques passarem */
+        }
+
+        /* O eixo que realmente vai girar o conteúdo */
+        .eixo-3d {
+            transform-style: preserve-3d;
+        }
+
+        /* Círculo branco que abriga o número */
+        .face-numero {
+            position: absolute;
+            width: 80px; 
+            height: 80px;
+            background: white; 
+            border-radius: 50%;
+            top: 40px; left: 40px; /* Centraliza (160 - 80) / 2 */
+            transform: translateZ(80px); /* Empurra o círculo para a superfície da bola 3D */
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
+            backface-visibility: hidden; /* Oculta quando gira para trás da bola */
+        }
+
+        /* O Texto do Número */
+        .face-numero span {
+            font-size: 40px; 
+            font-weight: bold; 
+            color: #ff4b2b;
+            transition: opacity 0.2s;
+        }
+
+        /* ANIMAÇÃO DO GIRO 3D (Na direção do usuário) */
         .girando {
-            animation: spinGlobo 0.5s linear infinite;
-        }
-        .girando .bolinha-interna {
-            animation: tremelique 0.2s infinite alternate ease-in-out;
-        }
-        .girando .numero-atual {
-            display: none; /* Esconde o número enquanto gira */
+            animation: rolarFrente 0.25s linear infinite; /* Roda super rápido */
         }
 
-        @keyframes spinGlobo {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes tremelique {
-            0% { transform: translate(-15px, -15px); }
-            25% { transform: translate(20px, 5px); }
-            50% { transform: translate(-10px, 20px); }
-            75% { transform: translate(15px, -20px); }
-            100% { transform: translate(0, 0); }
+        @keyframes rolarFrente {
+            from { transform: rotateX(0deg); }
+            to { transform: rotateX(-360deg); } /* Eixo X negativo rola na sua direção */
         }
 
         /* CAIXA DE HISTÓRICO */
@@ -142,7 +146,7 @@
         .numero-sorteado {
             display: inline-block;
             padding: 8px 12px;
-            background-color: #11998e;
+            background-color: #ff4b2b;
             color: white;
             border-radius: 6px;
             font-weight: bold;
@@ -162,7 +166,7 @@
 <body>
 
     <div class="container">
-        <h2>🎱 Sorteador de Bingo</h2>
+        <h2>🎱 Bingo 3D</h2>
 
         <div id="tela-menu">
             <h3>Escolha o tipo de Bingo:</h3>
@@ -180,15 +184,23 @@
         </div>
 
         <div id="tela-jogo">
-            <button onclick="voltarMenu()" style="background: #555; margin-bottom: 10px; box-shadow: none;">⬅️ Voltar ao Menu</button>
+            <button onclick="voltarMenu()" style="background: #444; margin-bottom: 10px;">⬅️ Voltar ao Menu</button>
             
-            <h3 id="titulo-jogo" style="color: #00d2ff;"></h3>
+            <h3 id="titulo-jogo"></h3>
             
-            <div id="globo" class="globo-container">
-                <div id="numero-atual" class="numero-atual">?</div>
+            <div class="palco-3d">
+                <div class="fundo-bola"></div>
+                
+                <div class="eixo-3d" id="eixo-bola">
+                    <div class="face-numero">
+                        <span id="numero-atual">?</span>
+                    </div>
                 </div>
+
+                <div class="luz-sombra"></div>
+            </div>
             
-            <button id="btn-sortear" onclick="sortearNumero()" style="padding: 15px 30px; font-size: 20px; background: linear-gradient(to right, #11998e, #38ef7d); box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);">
+            <button id="btn-sortear" onclick="sortearNumero()" style="padding: 15px 30px; font-size: 20px; background: linear-gradient(to right, #11998e, #38ef7d); margin-bottom: 15px;">
                 Sortear Número
             </button>
 
@@ -204,10 +216,7 @@
     <script>
         let maximo = null;
         let sorteados = [];
-        let sorteando = false; // Controle para evitar duplo clique
-
-        // Cores para as bolinhas de enfeite
-        const cores = ['#ff416c', '#00d2ff', '#f9d423', '#38ef7d', '#8e2de2'];
+        let sorteando = false;
 
         function iniciarJogo(limite) {
             maximo = limite;
@@ -220,7 +229,6 @@
             document.getElementById('total').innerText = maximo;
             document.getElementById('numero-atual').innerText = '?';
             
-            criarBolinhasDecorativas();
             atualizarHistorico();
         }
 
@@ -233,7 +241,7 @@
             if (limite > 1) {
                 iniciarJogo(limite);
             } else {
-                alert("Por favor, insira um número válido (maior que 1).");
+                alert("Por favor, insira um número válido.");
             }
         }
 
@@ -244,33 +252,7 @@
             document.getElementById('input-limite').value = '';
         }
 
-        // Gera bolinhas de enfeite dentro do globo
-        function criarBolinhasDecorativas() {
-            const globo = document.getElementById('globo');
-            // Remove bolinhas antigas (mantém apenas o texto do numero)
-            globo.innerHTML = '<div id="numero-atual" class="numero-atual">?</div>';
-            
-            for(let i = 0; i < 15; i++) {
-                let bolinha = document.createElement('div');
-                bolinha.className = 'bolinha-interna';
-                bolinha.style.backgroundColor = cores[Math.floor(Math.random() * cores.length)];
-                
-                // Posições aleatórias dentro do globo
-                let posX = Math.floor(Math.random() * 80) + 10;
-                let posY = Math.floor(Math.random() * 80) + 10;
-                
-                bolinha.style.left = posX + '%';
-                bolinha.style.top = posY + '%';
-                
-                // Adiciona atraso diferente na animação para parecer bagunçado
-                bolinha.style.animationDelay = (Math.random() * 0.5) + 's';
-                
-                globo.appendChild(bolinha);
-            }
-        }
-
         function sortearNumero() {
-            // Se já estiver rodando a animação, não faz nada
             if (sorteando) return; 
 
             if (sorteados.length >= maximo) {
@@ -278,33 +260,36 @@
                 return;
             }
 
-            // Inicia o bloqueio do botão e a animação
+            // Inicia o bloqueio e o giro
             sorteando = true;
             document.getElementById('btn-sortear').disabled = true;
             document.getElementById('btn-sortear').innerText = "Sorteando...";
             
-            const globo = document.getElementById('globo');
-            globo.classList.add('girando'); // Inicia o giro
+            // Oculta o número atual para dar suspense
+            document.getElementById('numero-atual').style.opacity = '0';
+            
+            const eixo = document.getElementById('eixo-bola');
+            eixo.classList.add('girando'); // Inicia a animação CSS
 
-            // Acha o número em "background" (instantâneo para o PC, mas esconde do usuário)
             let novoSorteio;
             do {
                 novoSorteio = Math.floor(Math.random() * maximo) + 1;
             } while (sorteados.includes(novoSorteio));
 
-            // Salva na lista e ordena
             sorteados.push(novoSorteio);
             sorteados.sort((a, b) => a - b);
 
-            // Aguarda 1.2 segundos (1200ms) para revelar o resultado
+            // Trava exata de 1.2 segundos (1200ms)
             setTimeout(() => {
-                globo.classList.remove('girando'); // Para a animação
+                eixo.classList.remove('girando'); // Para de rolar
                 
-                // Atualiza a tela com o número sorteado
+                // Mostra o novo número
                 document.getElementById('numero-atual').innerText = novoSorteio;
+                document.getElementById('numero-atual').style.opacity = '1';
+                
                 atualizarHistorico();
 
-                // Libera o botão novamente
+                // Libera o botão
                 sorteando = false;
                 document.getElementById('btn-sortear').disabled = false;
                 document.getElementById('btn-sortear').innerText = "Sortear Número";
@@ -314,7 +299,6 @@
 
         function atualizarHistorico() {
             document.getElementById('contador').innerText = sorteados.length;
-            
             const listaHtml = sorteados.map(num => `<span class="numero-sorteado">${num}</span>`).join('');
             document.getElementById('lista-sorteados').innerHTML = listaHtml;
         }
