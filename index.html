@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo 3D - Física Realista</title>
+    <title>Bingo 3D - Gaiola Realista</title>
     <style>
         /* ====== BASE E LAYOUT ====== */
         body {
@@ -18,6 +18,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            overflow-x: hidden;
         }
 
         .container {
@@ -28,6 +29,7 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             max-width: 600px;
             width: 100%;
+            z-index: 1;
         }
 
         h2, h3, h4 { margin-top: 0; }
@@ -84,7 +86,6 @@
             border: none; outline: none; text-align: center; width: 120px;
         }
 
-        /* ====== HISTÓRICO DE JOGOS ====== */
         .card-jogo {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255,255,255,0.2);
@@ -95,24 +96,33 @@
         .card-info p { margin: 0; font-size: 14px; color: #ccc; }
         .botoes-card { display: flex; gap: 8px; align-items: center; }
 
-        /* ====== GLOBO 3D COM FÍSICA ====== */
+        /* ====== O HEROI: GLOBO GAIOLA 3D ====== */
         .globo-bingo-container {
             position: relative;
             width: 220px;
             height: 220px;
-            margin: 20px auto 40px auto;
-            perspective: 800px; /* Profundidade do 3D */
+            margin: 40px auto;
+            perspective: 1000px;
+            transform-style: preserve-3d;
+            /* Transição suave para quando ela voltar ao normal ou avançar */
+            transition: transform 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
         }
 
-        /* 1. O Vidro ao Fundo */
+        /* CLASSE CRUCIAL: Faz a gaiola INTEIRA rolar e avançar na cara do usuário */
+        .globo-avancando-3d {
+            transform: scale(2.2) rotate(720deg) translateY(15px);
+            z-index: 999;
+        }
+
+        /* O fundo de vidro acoplado ao container */
         .globo-vidro {
             position: absolute; top:0; left:0; width:100%; height:100%;
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), rgba(0,0,0,0.7));
-            box-shadow: 0 15px 35px rgba(0,0,0,0.7), inset 0 0 30px rgba(255,255,255,0.1);
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), rgba(0,0,0,0.6));
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 0 30px rgba(255,255,255,0.1);
         }
 
-        /* 2. Container Invisível onde roda a Matemática (Física) */
+        /* Espaço interno das bolinhas físicas */
         .physics-container {
             position: absolute; top:0; left:0; width:100%; height:100%;
             border-radius: 50%;
@@ -124,32 +134,21 @@
             position: absolute; top:0; left:0;
             width: 16px; height: 16px;
             border-radius: 50%;
-            box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.5);
-            /* A posição real será definida via transform no JavaScript */
+            box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.4);
         }
 
-        /* 3. A Gaiola Metálica 3D que ROLA na sua direção */
+        /* Estrutura dos aros metálicos da gaiola */
         .wireframe-container {
             position: absolute; top:0; left:0; width:100%; height:100%;
             transform-style: preserve-3d;
-            animation: rolarLento 5s linear infinite;
             z-index: 3;
             pointer-events: none;
         }
-        
-        .girando-rapido {
-            animation: rolarRapido 0.3s linear infinite !important;
-        }
 
-        /* Faz a gaiola rolar no eixo X (girando pra frente em direção ao jogador) */
-        @keyframes rolarLento { from { transform: rotateX(0deg); } to { transform: rotateX(360deg); } }
-        @keyframes rolarRapido { from { transform: rotateX(0deg); } to { transform: rotateX(360deg); } }
-
-        /* Os "Aros" metálicos que montam a esfera 3D */
         .anel {
             position: absolute; top:0; left:0; width:100%; height:100%;
             border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.3);
+            border: 2px dashed rgba(255,255,255,0.4);
             box-sizing: border-box;
         }
         .anel-1 { transform: rotateY(0deg); }
@@ -157,59 +156,44 @@
         .anel-3 { transform: rotateY(90deg); }
         .anel-4 { transform: rotateY(135deg); }
 
-        /* ====== BOLA SORTEADA 3D ====== */
-        .bola-sorteada-3d {
+        /* ====== NÚMERO SORTEADO EM DESTAQUE NO MEIO DO GLOBO ====== */
+        .numero-centro-globo {
             position: absolute;
-            width: 110px; height: 110px;
-            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ff4b2b 65%, #990000 100%);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 65px; height: 65px;
+            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ff4b2b 75%, #990000 100%);
             border-radius: 50%;
-            top: 55px; left: 55px;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.6);
-            z-index: 50;
-            transform: scale(0);
+            color: white; font-size: 28px; font-weight: bold;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+            z-index: 10;
             opacity: 0;
-            pointer-events: none;
+            border: 3px solid #fff;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2), opacity 0.3s;
         }
-
-        .bola-sorteada-3d .rotulo-branco {
-            width: 55px; height: 55px;
-            background: white; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: #ff4b2b; font-size: 28px; font-weight: bold;
-            box-shadow: inset 0 3px 8px rgba(0,0,0,0.4);
-        }
-
-        .bola-rolando {
-            animation: rolarNaTela 1.1s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards;
-        }
-
-        @keyframes rolarNaTela {
-            0% { transform: scale(0) rotate(0deg) translateY(0); opacity: 0; }
-            40% { opacity: 1; }
-            100% {
-                transform: scale(1.6) rotate(720deg) translateY(40px) translateZ(100px);
-                opacity: 1;
-                box-shadow: 0 30px 50px rgba(0,0,0,0.8);
-            }
+        
+        .numero-centro-globo.mostrar {
+            transform: translate(-50%, -50%) scale(1.2);
+            opacity: 1;
         }
 
         /* ====== CAIXA DE HISTÓRICO DA PARTIDA ====== */
         .historico-container {
             background-color: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 12px;
-            text-align: left; margin-top: 20px; min-height: 80px; max-height: 200px; overflow-y: auto;
+            text-align: left; margin-top: 20px; min-height: 80px; max-height: 180px; overflow-y: auto;
         }
         .numero-sorteado {
             display: inline-block; padding: 8px 12px; background-color: #ff4b2b;
             color: white; border-radius: 6px; font-weight: bold; margin: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3); animation: fadeIn 0.3s ease-in;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>🎱 Bingo com Física 3D</h2>
+        <h2>🎱 Bingo Gaiola 3D Realtime</h2>
 
         <div id="tela-login" class="tela ativa">
             <h3>Selecione sua conta:</h3>
@@ -247,23 +231,19 @@
             
             <h3 id="titulo-jogo"></h3>
             
-            <div class="globo-bingo-container">
+            <div class="globo-bingo-container" id="globo-gaiola-total">
                 <div class="globo-vidro"></div>
                 
                 <div class="physics-container" id="physics-container"></div>
                 
-                <div class="wireframe-container" id="wireframe">
+                <div class="wireframe-container">
                     <div class="anel anel-1"></div>
                     <div class="anel anel-2"></div>
                     <div class="anel anel-3"></div>
                     <div class="anel anel-4"></div>
                 </div>
 
-                <div class="bola-sorteada-3d" id="bola-sorteada">
-                    <div class="rotulo-branco">
-                        <span id="numero-atual">?</span>
-                    </div>
-                </div>
+                <div class="numero-centro-globo" id="numero-display-interno">?</div>
             </div>
             
             <button id="btn-sortear" onclick="sortearNumero()" class="btn-sucesso" style="padding: 15px 30px; font-size: 20px; margin-bottom: 25px; width: 80%;">
@@ -296,22 +276,20 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // VARIÁVEIS GLOBAIS
         window.usuarios = [{ id: 1, nome: "Luiz Leão" }];
         window.usuarioAtual = null;
         window.jogoAtual = null; 
         window.todosOsJogos = [];
         window.sorteando = false;
 
-        // ====== 1. MOTOR DE FÍSICA DAS BOLINHAS ======
+        // ====== 1. MOTOR DE FÍSICA REALISTA DAS BOLINHAS ======
         window.iniciarFisica = function() {
             const container = document.getElementById('physics-container');
             container.innerHTML = '';
             window.bolinhasFisicas = [];
             const cores = ['#ff4b2b', '#38ef7d', '#ffd700', '#00d2ff', '#fff', '#ff416c', '#11998e'];
             
-            // Cria 25 bolinhas para baterem umas nas outras
-            for(let i=0; i<25; i++) {
+            for(let i=0; i<30; i++) {
                 let el = document.createElement('div');
                 el.className = 'mini-bola';
                 el.style.backgroundColor = cores[i % cores.length];
@@ -319,13 +297,13 @@
                 
                 window.bolinhasFisicas.push({
                     el: el,
-                    x: 110 + (Math.random() * 60 - 30), // Centro inicial (110)
-                    y: 110 + (Math.random() * 60 - 30),
+                    x: 110 + (Math.random() * 50 - 25),
+                    y: 110 + (Math.random() * 50 - 25),
                     vx: Math.random() * 6 - 3,
                     vy: Math.random() * 6 - 3
                 });
             }
-            window.forcaDaGaiola = 0; // Controla se o globo está girando rápido
+            window.caosGaiola = 0; 
             
             if (!window.fisicaRodando) {
                 window.fisicaRodando = true;
@@ -334,24 +312,20 @@
         };
 
         function loopFisica() {
-            // Parâmetros do Círculo
             let cx = 110, cy = 110, raioGaiola = 110, raioBola = 8;
-            let distMaxima = raioGaiola - raioBola - 4; // Borda da parede
+            let distMaxima = raioGaiola - raioBola - 4; 
             
             for(let i=0; i<window.bolinhasFisicas.length; i++) {
                 let b = window.bolinhasFisicas[i];
                 
-                // Aplica Gravidade para cair pro fundo
+                // Gravidade constante empurrando para baixo
                 b.vy += 0.45; 
-                
-                // Atrito do ar leve
                 b.vx *= 0.99;
                 b.vy *= 0.99;
 
                 b.x += b.vx;
                 b.y += b.vy;
 
-                // Colisão contra as Paredes Redondas do Globo
                 let dx = b.x - cx; 
                 let dy = b.y - cy;
                 let distanciaDoCentro = Math.sqrt(dx*dx + dy*dy);
@@ -360,25 +334,22 @@
                     let nx = dx / distanciaDoCentro; 
                     let ny = dy / distanciaDoCentro;
                     
-                    // Empurra de volta pra dentro
                     b.x = cx + nx * distMaxima; 
                     b.y = cy + ny * distMaxima;
                     
-                    // Rebatida da Parede
                     let dot = b.vx*nx + b.vy*ny;
-                    b.vx -= 2 * dot * nx * 0.6; // Perde energia no impacto
+                    b.vx -= 2 * dot * nx * 0.6;
                     b.vy -= 2 * dot * ny * 0.6;
 
-                    // ====== MÁGICA AQUI: O GIRO ======
-                    // Se estivermos sorteando, a parede transmite velocidade brutal pras bolas
-                    if(window.forcaDaGaiola > 0) {
-                        b.vx += (Math.random() - 0.5) * window.forcaDaGaiola;
-                        b.vy -= Math.random() * window.forcaDaGaiola * 1.5; // Arremessa violentamente pra cima e pros lados
+                    // Se a gaiola estiver rolando/girando, joga impulsos caóticos nas bolinhas internas
+                    if(window.caosGaiola > 0) {
+                        b.vx += (Math.random() - 0.5) * window.caosGaiola;
+                        b.vy -= Math.random() * window.caosGaiola * 1.6; 
                     }
                 }
             }
 
-            // Colisão Realística Entre as Próprias Bolinhas
+            // Colisões entre as próprias esferas menores
             for(let i=0; i<window.bolinhasFisicas.length; i++) {
                 for(let j=i+1; j<window.bolinhasFisicas.length; j++) {
                     let b1 = window.bolinhasFisicas[i]; 
@@ -390,10 +361,9 @@
                     if(dist < raioBola * 2) {
                         let nx = dx/dist; let ny = dy/dist;
                         let overlap = (raioBola*2) - dist;
-                        // Afasta as duas
                         b1.x -= nx * overlap/2; b1.y -= ny * overlap/2;
                         b2.x += nx * overlap/2; b2.y += ny * overlap/2;
-                        // Troca de energia (colisão elástica)
+                        
                         let kx = b1.vx - b2.vx; let ky = b1.vy - b2.vy;
                         let forcaImpacto = (kx*nx + ky*ny);
                         b1.vx -= forcaImpacto * nx * 0.85; b1.vy -= forcaImpacto * ny * 0.85;
@@ -402,7 +372,6 @@
                 }
             }
 
-            // Atualiza os elementos na tela
             for(let b of window.bolinhasFisicas) {
                 b.el.style.transform = `translate(${b.x - raioBola}px, ${b.y - raioBola}px)`;
             }
@@ -410,11 +379,10 @@
             requestAnimationFrame(loopFisica);
         }
 
-        // ====== 2. CONTROLE DO JOGO & FIREBASE ======
+        // ====== 2. SINCRONIZAÇÃO E CONTROLE DO FIREBASE ======
         onValue(ref(db, 'jogos'), (snapshot) => {
             const data = snapshot.val();
             window.todosOsJogos = data ? Object.values(data) : [];
-            
             window.todosOsJogos.forEach(j => { if (!j.sorteados) j.sorteados = []; });
             
             if (document.getElementById('tela-historico').classList.contains('ativa')) {
@@ -428,15 +396,17 @@
                     window.atualizarPlacarSorteados();
                     window.verificarStatusBotao();
                     
-                    const bola = document.getElementById('bola-sorteada');
+                    const gaiolaTotal = document.getElementById('globo-gaiola-total');
+                    const displayNum = document.getElementById('numero-display-interno');
+                    
                     if (window.jogoAtual.sorteados.length > 0) {
-                        document.getElementById('numero-atual').innerText = window.jogoAtual.sorteados[window.jogoAtual.sorteados.length - 1];
-                        bola.classList.add('bola-rolando');
+                        displayNum.innerText = window.jogoAtual.sorteados[window.jogoAtual.sorteados.length - 1];
+                        gaiolaTotal.classList.add('globo-avancando-3d');
+                        displayNum.classList.add('mostrar');
                     } else {
-                        document.getElementById('numero-atual').innerText = '?';
-                        bola.classList.remove('bola-rolando');
-                        bola.style.opacity = '0';
-                        bola.style.transform = 'scale(0)';
+                        displayNum.innerText = '?';
+                        gaiolaTotal.classList.remove('globo-avancando-3d');
+                        displayNum.classList.remove('mostrar');
                     }
                 }
             }
@@ -472,7 +442,7 @@
         window.iniciarNovoJogo = function(limite) {
             const id = Date.now().toString();
             const novo = { id: id, idUsuario: window.usuarioAtual.id, limite: limite, sorteados: [], dataCriacao: new Date().toLocaleString('pt-BR') };
-            set(ref(db, 'jogos/' + id), novo).then(() => window.carregarJogoNaTela(novo)).catch(e => alert("Erro! Regras do banco de dados bloqueadas."));
+            set(ref(db, 'jogos/' + id), novo).then(() => window.carregarJogoNaTela(novo)).catch(e => alert("Erro no banco."));
         }
 
         window.mostrarDivPersonalizado = function() { document.getElementById('div-personalizado').style.display = 'block'; }
@@ -489,69 +459,73 @@
             document.getElementById('titulo-jogo').innerText = `Bingo (1 a ${jogo.limite})`;
             document.getElementById('total').innerText = jogo.limite;
             
-            const bola = document.getElementById('bola-sorteada');
+            const gaiolaTotal = document.getElementById('globo-gaiola-total');
+            const displayNum = document.getElementById('numero-display-interno');
+            
             if (jogo.sorteados.length > 0) {
-                document.getElementById('numero-atual').innerText = jogo.sorteados[jogo.sorteados.length - 1];
-                bola.classList.add('bola-rolando');
+                displayNum.innerText = jogo.sorteados[jogo.sorteados.length - 1];
+                gaiolaTotal.classList.add('globo-avancando-3d');
+                displayNum.classList.add('mostrar');
             } else {
-                document.getElementById('numero-atual').innerText = '?';
-                bola.classList.remove('bola-rolando');
-                bola.style.opacity = '0';
-                bola.style.transform = 'scale(0)';
+                displayNum.innerText = '?';
+                gaiolaTotal.classList.remove('globo-avancando-3d');
+                displayNum.classList.remove('mostrar');
             }
             window.atualizarPlacarSorteados();
             window.verificarStatusBotao();
         }
 
-        // ====== 3. O SORTEIO E A LIGAÇÃO COM A FÍSICA ======
+        // ====== 3. O SORTEIO ACIONANDO O ROLO COMPRESSOR 3D ======
         window.sortearNumero = function() {
             if (window.sorteando || !window.jogoAtual) return; 
             if (!window.jogoAtual.sorteados) window.jogoAtual.sorteados = [];
-
             if (window.jogoAtual.sorteados.length >= window.jogoAtual.limite) { alert("Sorteio finalizado!"); return; }
 
             window.sorteando = true;
             const btnSortear = document.getElementById('btn-sortear');
             btnSortear.disabled = true;
-            btnSortear.innerText = "Embaralhando Globo...";
+            btnSortear.innerText = "Gaiola Rolando...";
             
-            // Esconde a bola atual instantaneamente
-            const bola = document.getElementById('bola-sorteada');
-            bola.classList.remove('bola-rolando');
-            bola.style.opacity = '0';
-            bola.style.transform = 'scale(0)';
+            const gaiolaTotal = document.getElementById('globo-gaiola-total');
+            const displayNum = document.getElementById('numero-display-interno');
 
-            // ACELERA O GLOBO 3D EXTERNO E EXPLODE A FÍSICA INTERNA
-            document.getElementById('wireframe').classList.add('girando-rapido');
-            window.forcaDaGaiola = 15; // Joga força no motor de física!
+            // 1. Recua e zera o globo instantaneamente para preparar o impulso
+            gaiolaTotal.classList.remove('globo-avancando-3d');
+            displayNum.classList.remove('mostrar');
 
-            let novoSorteio;
-            do { novoSorteio = Math.floor(Math.random() * window.jogoAtual.limite) + 1; } 
-            while (window.jogoAtual.sorteados.includes(novoSorteio));
+            // Pequeno delay para resetar o frame antes do impacto visual
+            setTimeout(() => {
+                // 2. A GAIOLA INTEIRA ENTRA EM ACELERAÇÃO E SE ATIRA NA TELA
+                gaiolaTotal.classList.add('globo-avancando-3d');
+                window.caosGaiola = 20; // Ativa a trepidação e mistura frenética das bolinhas internas
 
-            const copia = [...window.jogoAtual.sorteados, novoSorteio];
+                let novoSorteio;
+                do { novoSorteio = Math.floor(Math.random() * window.jogoAtual.limite) + 1; } 
+                while (window.jogoAtual.sorteados.includes(novoSorteio));
 
-            update(ref(db, 'jogos/' + window.jogoAtual.id), { sorteados: copia })
-            .then(() => {
-                // Deixa rodando o show de física por 1.8 segundos pra dar imersão
-                setTimeout(() => {
-                    document.getElementById('wireframe').classList.remove('girando-rapido');
-                    window.forcaDaGaiola = 0; // Desliga a força, a gravidade volta ao normal
-                    
-                    window.jogoAtual.sorteados = copia;
-                    document.getElementById('numero-atual').innerText = novoSorteio;
-                    
-                    // Joga a bola na cara do usuário!
-                    bola.classList.add('bola-rolando');
-                    
-                    window.atualizarPlacarSorteados();
-                    window.verificarStatusBotao();
-                    window.sorteando = false;
-                }, 1800);
-            }).catch(e => {
-                document.getElementById('wireframe').classList.remove('girando-rapido');
-                window.forcaDaGaiola = 0; window.sorteando = false; window.verificarStatusBotao();
-            });
+                const copia = [...window.jogoAtual.sorteados, novoSorteio];
+
+                update(ref(db, 'jogos/' + window.jogoAtual.id), { sorteados: copia })
+                .then(() => {
+                    // Mantém ela rolando em tamanho gigante por 1.4 segundos na cara do player
+                    setTimeout(() => {
+                        window.caosGaiola = 0; // Desliga o caos, as bolinhas voltam a assentar no fundo
+                        
+                        window.jogoAtual.sorteados = copia;
+                        displayNum.innerText = novoSorteio;
+                        
+                        // Revela o número bem no coração do globo gigante
+                        displayNum.classList.add('mostrar');
+                        
+                        window.atualizarPlacarSorteados();
+                        window.verificarStatusBotao();
+                        window.sorteando = false;
+                    }, 1400);
+                }).catch(e => {
+                    gaiolaTotal.classList.remove('globo-avancando-3d');
+                    window.caosGaiola = 0; window.sorteando = false; window.verificarStatusBotao();
+                });
+            }, 150);
         }
 
         window.atualizarPlacarSorteados = function() {
@@ -591,7 +565,6 @@
         window.retomarJogo = function(id) { const j = window.todosOsJogos.find(j => j.id === id); if(j) window.carregarJogoNaTela(j); }
         window.excluirJogo = function(id) { if(confirm("Apagar?")) remove(ref(db, 'jogos/'+id)); }
 
-        // Dá o play em tudo
         window.renderizarUsuarios();
         window.iniciarFisica();
     </script>
