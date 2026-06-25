@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo 3D</title>
+    <title>Bingo 3D - Sistema de Usuários</title>
     <style>
-        /* BASE E LAYOUT */
+        /* ====== BASE E LAYOUT ====== */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #1f1c2c, #928dab);
@@ -32,7 +32,16 @@
 
         h2, h3, h4 { margin-top: 0; }
 
-        /* BOTÕES */
+        /* ====== CONTROLE DE TELAS ====== */
+        .tela { display: none; }
+        .tela.ativa { display: block; animation: fadeInTela 0.3s ease-in; }
+
+        @keyframes fadeInTela {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ====== BOTÕES ====== */
         button {
             background: linear-gradient(to right, #ff416c, #ff4b2b);
             color: white;
@@ -56,6 +65,10 @@
             filter: grayscale(100%);
         }
 
+        .btn-secundario { background: #444; }
+        .btn-sucesso { background: linear-gradient(to right, #11998e, #38ef7d); }
+        .btn-acao { padding: 8px 12px; font-size: 14px; margin: 0 5px; }
+
         input[type="number"] {
             padding: 10px;
             font-size: 16px;
@@ -66,16 +79,30 @@
             width: 120px;
         }
 
-        /* PALCO 3D DA BOLA */
+        /* ====== CARTÕES DE HISTÓRICO ====== */
+        .card-jogo {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-info h4 { margin: 0 0 5px 0; color: #ff4b2b; }
+        .card-info p { margin: 0; font-size: 14px; color: #ccc; }
+
+        /* ====== PALCO 3D DA BOLA ====== */
         .palco-3d {
-            perspective: 800px; /* Define a profundidade do 3D */
+            perspective: 800px;
             width: 160px; 
             height: 160px;
             margin: 30px auto;
             position: relative;
         }
 
-        /* Camadas da Bola */
         .fundo-bola, .luz-sombra, .eixo-3d {
             position: absolute;
             top: 0; left: 0;
@@ -83,58 +110,39 @@
             border-radius: 50%;
         }
 
-        /* A cor vermelha de fundo que fica parada */
-        .fundo-bola {
-            background-color: #ff4b2b;
-        }
+        .fundo-bola { background-color: #ff4b2b; }
 
-        /* A luz e a sombra que ficam por cima de tudo para dar a ilusão redonda */
         .luz-sombra {
             background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.5) 0%, transparent 40%),
                         radial-gradient(circle at 65% 65%, transparent 40%, rgba(0,0,0,0.8) 100%);
             box-shadow: inset -5px -5px 15px rgba(0,0,0,0.6), 0 15px 25px rgba(0,0,0,0.4);
             z-index: 10;
-            pointer-events: none; /* Deixa os cliques passarem */
+            pointer-events: none;
         }
 
-        /* O eixo que realmente vai girar o conteúdo */
-        .eixo-3d {
-            transform-style: preserve-3d;
-        }
+        .eixo-3d { transform-style: preserve-3d; }
 
-        /* Círculo branco que abriga o número */
         .face-numero {
             position: absolute;
-            width: 80px; 
-            height: 80px;
-            background: white; 
-            border-radius: 50%;
-            top: 40px; left: 40px; /* Centraliza (160 - 80) / 2 */
-            transform: translateZ(80px); /* Empurra o círculo para a superfície da bola 3D */
+            width: 80px; height: 80px;
+            background: white; border-radius: 50%;
+            top: 40px; left: 40px;
+            transform: translateZ(80px);
             display: flex; align-items: center; justify-content: center;
             box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
-            backface-visibility: hidden; /* Oculta quando gira para trás da bola */
+            backface-visibility: hidden;
         }
 
-        /* O Texto do Número */
-        .face-numero span {
-            font-size: 40px; 
-            font-weight: bold; 
-            color: #ff4b2b;
-            transition: opacity 0.2s;
-        }
+        .face-numero span { font-size: 40px; font-weight: bold; color: #ff4b2b; transition: opacity 0.2s; }
 
-        /* ANIMAÇÃO DO GIRO 3D (Na direção do usuário) */
-        .girando {
-            animation: rolarFrente 0.25s linear infinite; /* Roda super rápido */
-        }
+        .girando { animation: rolarFrente 0.25s linear infinite; }
 
         @keyframes rolarFrente {
             from { transform: rotateX(0deg); }
-            to { transform: rotateX(-360deg); } /* Eixo X negativo rola na sua direção */
+            to { transform: rotateX(-360deg); }
         }
 
-        /* CAIXA DE HISTÓRICO */
+        /* ====== CAIXA DE NÚMEROS SORTEADOS ====== */
         .historico-container {
             background-color: rgba(0, 0, 0, 0.3);
             padding: 15px;
@@ -142,6 +150,8 @@
             text-align: left;
             margin-top: 20px;
             min-height: 80px;
+            max-height: 200px;
+            overflow-y: auto;
         }
         .numero-sorteado {
             display: inline-block;
@@ -154,13 +164,6 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             animation: fadeIn 0.3s ease-in;
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.5); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        #tela-jogo { display: none; }
     </style>
 </head>
 <body>
@@ -168,39 +171,61 @@
     <div class="container">
         <h2>🎱 Bingo 3D</h2>
 
-        <div id="tela-menu">
-            <h3>Escolha o tipo de Bingo:</h3>
-            <div style="margin-bottom: 20px;">
-                <button onclick="iniciarJogo(50)">1 a 50</button>
-                <button onclick="iniciarJogo(75)">1 a 75</button>
-                <button onclick="iniciarJogo(100)">1 a 100</button>
-                <button onclick="mostrarPersonalizado()">Personalizado</button>
-            </div>
-
-            <div id="div-personalizado" style="display: none;">
-                <input type="number" id="input-limite" placeholder="Ex: 200">
-                <button onclick="iniciarPersonalizado()">Começar</button>
-            </div>
+        <div id="tela-login" class="tela ativa">
+            <h3>Selecione sua conta:</h3>
+            <div id="lista-usuarios" style="margin-top: 20px;">
+                </div>
         </div>
 
-        <div id="tela-jogo">
-            <button onclick="voltarMenu()" style="background: #444; margin-bottom: 10px;">⬅️ Voltar ao Menu</button>
+        <div id="tela-menu" class="tela">
+            <h3 id="bem-vindo-texto" style="color: #00d2ff;"></h3>
+            
+            <button onclick="mudarTela('tela-historico')" class="btn-secundario" style="margin-bottom: 25px; width: 100%;">
+                📜 Ver Meus Jogos Anteriores
+            </button>
+
+            <h4>Começar um Novo Jogo:</h4>
+            <div style="margin-bottom: 20px;">
+                <button onclick="iniciarNovoJogo(50)">1 a 50</button>
+                <button onclick="iniciarNovoJogo(75)">1 a 75</button>
+                <button onclick="iniciarNovoJogo(100)">1 a 100</button>
+                <button onclick="mostrarDivPersonalizado()">Personalizado</button>
+            </div>
+
+            <div id="div-personalizado" style="display: none; margin-bottom: 20px;">
+                <input type="number" id="input-limite" placeholder="Ex: 200">
+                <button onclick="iniciarJogoPersonalizado()">Criar</button>
+            </div>
+
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
+            <button onclick="fazerLogout()" style="background: transparent; border: 1px solid #555; color: #ccc;">Sair da Conta</button>
+        </div>
+
+        <div id="tela-historico" class="tela">
+            <button onclick="mudarTela('tela-menu')" class="btn-secundario" style="margin-bottom: 20px;">⬅️ Voltar ao Menu</button>
+            
+            <h3>Seu Histórico de Jogos</h3>
+            <div id="lista-jogos-salvos" style="max-height: 400px; overflow-y: auto; margin-top: 20px;">
+                </div>
+        </div>
+
+        <div id="tela-jogo" class="tela">
+            <button onclick="mudarTela('tela-menu')" class="btn-secundario" style="margin-bottom: 10px;">⬅️ Voltar ao Menu</button>
+            <p style="font-size: 12px; color: #aaa; margin-top: 0;">(O jogo é salvo automaticamente)</p>
             
             <h3 id="titulo-jogo"></h3>
             
             <div class="palco-3d">
                 <div class="fundo-bola"></div>
-                
                 <div class="eixo-3d" id="eixo-bola">
                     <div class="face-numero">
                         <span id="numero-atual">?</span>
                     </div>
                 </div>
-
                 <div class="luz-sombra"></div>
             </div>
             
-            <button id="btn-sortear" onclick="sortearNumero()" style="padding: 15px 30px; font-size: 20px; background: linear-gradient(to right, #11998e, #38ef7d); margin-bottom: 15px;">
+            <button id="btn-sortear" onclick="sortearNumero()" class="btn-sucesso" style="padding: 15px 30px; font-size: 20px; margin-bottom: 15px;">
                 Sortear Número
             </button>
 
@@ -214,94 +239,216 @@
     </div>
 
     <script>
-        let maximo = null;
-        let sorteados = [];
-        let sorteando = false;
+        // --- BANCO DE DADOS (Simulado) ---
+        const usuarios = [
+            { id: 1, nome: "Luiz Leão" }
+            // Para adicionar mais no futuro, basta colocar vírgula e: { id: 2, nome: "João" }
+        ];
 
-        function iniciarJogo(limite) {
-            maximo = limite;
-            sorteados = [];
-            
-            document.getElementById('tela-menu').style.display = 'none';
-            document.getElementById('tela-jogo').style.display = 'block';
-            
-            document.getElementById('titulo-jogo').innerText = `Bingo (1 a ${maximo})`;
-            document.getElementById('total').innerText = maximo;
-            document.getElementById('numero-atual').innerText = '?';
-            
-            atualizarHistorico();
+        let usuarioAtual = null;
+        let jogoAtual = null; // Guarda o objeto do jogo que está rolando
+        let sorteando = false; // Trava do botão 3D
+
+        // Carrega os jogos do localStorage (se não tiver, cria um array vazio)
+        let todosOsJogos = JSON.parse(localStorage.getItem('bingo_historico_jogos')) || [];
+
+        // --- NAVEGAÇÃO DE TELAS ---
+        function mudarTela(idTelaAlvo) {
+            document.querySelectorAll('.tela').forEach(tela => tela.classList.remove('ativa'));
+            document.getElementById(idTelaAlvo).classList.add('ativa');
+
+            if (idTelaAlvo === 'tela-historico') {
+                renderizarHistoricoJogos();
+            }
         }
 
-        function mostrarPersonalizado() {
+        // --- SISTEMA DE LOGIN ---
+        function renderizarUsuarios() {
+            const container = document.getElementById('lista-usuarios');
+            container.innerHTML = '';
+            usuarios.forEach(user => {
+                const btn = document.createElement('button');
+                btn.innerText = `👤 Entrar como ${user.nome}`;
+                btn.style.width = '100%';
+                btn.onclick = () => fazerLogin(user);
+                container.appendChild(btn);
+            });
+        }
+
+        function fazerLogin(user) {
+            usuarioAtual = user;
+            document.getElementById('bem-vindo-texto').innerText = `Olá, ${user.nome}!`;
+            mudarTela('tela-menu');
+        }
+
+        function fazerLogout() {
+            usuarioAtual = null;
+            mudarTela('tela-login');
+        }
+
+        // --- GERENCIAMENTO DE JOGOS ---
+        function salvarNoBanco() {
+            localStorage.setItem('bingo_historico_jogos', JSON.stringify(todosOsJogos));
+        }
+
+        function iniciarNovoJogo(limite) {
+            // Cria a "ficha" do novo jogo
+            const novoJogo = {
+                id: Date.now(), // Gera um ID único baseado na data/hora atual
+                idUsuario: usuarioAtual.id,
+                limite: limite,
+                sorteados: [],
+                dataCriacao: new Date().toLocaleString('pt-BR')
+            };
+
+            todosOsJogos.push(novoJogo);
+            salvarNoBanco();
+            
+            carregarJogoNaTela(novoJogo);
+        }
+
+        function mostrarDivPersonalizado() {
             document.getElementById('div-personalizado').style.display = 'block';
         }
 
-        function iniciarPersonalizado() {
+        function iniciarJogoPersonalizado() {
             const limite = parseInt(document.getElementById('input-limite').value);
             if (limite > 1) {
-                iniciarJogo(limite);
+                iniciarNovoJogo(limite);
+                document.getElementById('div-personalizado').style.display = 'none';
+                document.getElementById('input-limite').value = '';
             } else {
                 alert("Por favor, insira um número válido.");
             }
         }
 
-        function voltarMenu() {
-            document.getElementById('tela-menu').style.display = 'block';
-            document.getElementById('tela-jogo').style.display = 'none';
-            document.getElementById('div-personalizado').style.display = 'none';
-            document.getElementById('input-limite').value = '';
+        function carregarJogoNaTela(jogo) {
+            jogoAtual = jogo;
+            mudarTela('tela-jogo');
+            
+            document.getElementById('titulo-jogo').innerText = `Bingo (1 a ${jogo.limite})`;
+            document.getElementById('total').innerText = jogo.limite;
+            
+            // Se já tiver número sorteado (caso de continuar jogo), mostra o último. Se não, mostra "?"
+            if (jogo.sorteados.length > 0) {
+                // Pegando a ordem cronológica real salva (antes de ordenar numericamente para a tela)
+                document.getElementById('numero-atual').innerText = jogo.sorteados[jogo.sorteados.length - 1];
+            } else {
+                document.getElementById('numero-atual').innerText = '?';
+            }
+
+            atualizarPlacarSorteados();
+            verificarStatusBotao();
         }
 
+        // --- LÓGICA DO SORTEIO 3D ---
         function sortearNumero() {
-            if (sorteando) return; 
+            if (sorteando || !jogoAtual) return; 
 
-            if (sorteados.length >= maximo) {
+            if (jogoAtual.sorteados.length >= jogoAtual.limite) {
                 alert("Todos os números já foram sorteados!");
                 return;
             }
 
-            // Inicia o bloqueio e o giro
             sorteando = true;
-            document.getElementById('btn-sortear').disabled = true;
-            document.getElementById('btn-sortear').innerText = "Sorteando...";
+            const btnSortear = document.getElementById('btn-sortear');
+            btnSortear.disabled = true;
+            btnSortear.innerText = "Sorteando...";
             
-            // Oculta o número atual para dar suspense
             document.getElementById('numero-atual').style.opacity = '0';
-            
             const eixo = document.getElementById('eixo-bola');
-            eixo.classList.add('girando'); // Inicia a animação CSS
+            eixo.classList.add('girando');
 
+            // Lógica para não repetir número
             let novoSorteio;
             do {
-                novoSorteio = Math.floor(Math.random() * maximo) + 1;
-            } while (sorteados.includes(novoSorteio));
+                novoSorteio = Math.floor(Math.random() * jogoAtual.limite) + 1;
+            } while (jogoAtual.sorteados.includes(novoSorteio));
 
-            sorteados.push(novoSorteio);
-            sorteados.sort((a, b) => a - b);
+            // Salva no jogo atual e atualiza o banco de dados
+            jogoAtual.sorteados.push(novoSorteio);
+            salvarNoBanco();
 
-            // Trava exata de 1.2 segundos (1200ms)
             setTimeout(() => {
-                eixo.classList.remove('girando'); // Para de rolar
+                eixo.classList.remove('girando');
                 
-                // Mostra o novo número
                 document.getElementById('numero-atual').innerText = novoSorteio;
                 document.getElementById('numero-atual').style.opacity = '1';
                 
-                atualizarHistorico();
+                atualizarPlacarSorteados();
+                verificarStatusBotao();
 
-                // Libera o botão
                 sorteando = false;
-                document.getElementById('btn-sortear').disabled = false;
-                document.getElementById('btn-sortear').innerText = "Sortear Número";
-                
             }, 1200);
         }
 
-        function atualizarHistorico() {
-            document.getElementById('contador').innerText = sorteados.length;
-            const listaHtml = sorteados.map(num => `<span class="numero-sorteado">${num}</span>`).join('');
+        function atualizarPlacarSorteados() {
+            document.getElementById('contador').innerText = jogoAtual.sorteados.length;
+            
+            // Cria uma cópia do array e ordena do menor pro maior só visualmente
+            const arrayOrdenado = [...jogoAtual.sorteados].sort((a, b) => a - b);
+            
+            const listaHtml = arrayOrdenado.map(num => `<span class="numero-sorteado">${num}</span>`).join('');
             document.getElementById('lista-sorteados').innerHTML = listaHtml;
         }
+
+        function verificarStatusBotao() {
+            const btnSortear = document.getElementById('btn-sortear');
+            if (jogoAtual.sorteados.length >= jogoAtual.limite) {
+                btnSortear.disabled = true;
+                btnSortear.innerText = "Sorteio Finalizado";
+            } else {
+                btnSortear.disabled = false;
+                btnSortear.innerText = "Sortear Número";
+            }
+        }
+
+        // --- LÓGICA DA TELA DE HISTÓRICO ---
+        function renderizarHistoricoJogos() {
+            const container = document.getElementById('lista-jogos-salvos');
+            container.innerHTML = '';
+
+            // Filtra apenas os jogos do usuário logado e inverte a ordem (mais recentes primeiro)
+            const jogosDoUsuario = todosOsJogos.filter(j => j.idUsuario === usuarioAtual.id).reverse();
+
+            if (jogosDoUsuario.length === 0) {
+                container.innerHTML = '<p style="color: #ccc;">Nenhum jogo encontrado.</p>';
+                return;
+            }
+
+            jogosDoUsuario.forEach(jogo => {
+                const finalizado = jogo.sorteados.length === jogo.limite;
+                const card = document.createElement('div');
+                card.className = 'card-jogo';
+                
+                // Estrutura visual do jogo na lista
+                card.innerHTML = `
+                    <div class="card-info">
+                        <h4>Bingo de 1 a ${jogo.limite}</h4>
+                        <p>🗓️ ${jogo.dataCriacao}</p>
+                        <p>🎱 Sorteados: ${jogo.sorteados.length} / ${jogo.limite}</p>
+                    </div>
+                    <div>
+                        <button class="${finalizado ? 'btn-secundario' : 'btn-sucesso'} btn-acao" onclick="retomarJogo(${jogo.id})">
+                            ${finalizado ? '👁️ Ver Números' : '▶️ Continuar'}
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Função chamada pelo botão de continuar/ver no histórico
+        function retomarJogo(idDoJogo) {
+            const jogoEncontrado = todosOsJogos.find(j => j.id === idDoJogo);
+            if (jogoEncontrado) {
+                carregarJogoNaTela(jogoEncontrado);
+            }
+        }
+
+        // --- INICIALIZAÇÃO ---
+        renderizarUsuarios();
+
     </script>
 </body>
 </html>
