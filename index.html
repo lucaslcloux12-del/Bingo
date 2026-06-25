@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo 3D - Gaiola Realista</title>
+    <title>Bingo 3D Realtime - Corrigido</title>
     <style>
         /* ====== BASE E LAYOUT ====== */
         body {
@@ -18,7 +18,6 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            overflow-x: hidden;
         }
 
         .container {
@@ -29,11 +28,11 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             max-width: 600px;
             width: 100%;
-            z-index: 1;
         }
 
         h2, h3, h4 { margin-top: 0; }
 
+        /* ====== CONTROLE DE TELAS ====== */
         .tela { display: none; }
         .tela.ativa { display: block; animation: fadeInTela 0.3s ease-in; }
 
@@ -77,132 +76,130 @@
             padding: 8px;
             font-size: 14px;
             border-radius: 6px;
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .btn-lixeira:hover { background: rgba(255, 75, 43, 0.2); }
+        .btn-lixeira:hover {
+            background: rgba(255, 75, 43, 0.2);
+        }
 
         input[type="number"] {
-            padding: 10px; font-size: 16px; border-radius: 8px;
-            border: none; outline: none; text-align: center; width: 120px;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            text-align: center;
+            width: 120px;
         }
 
+        /* ====== CARTÕES DE HISTÓRICO ====== */
         .card-jogo {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255,255,255,0.2);
-            padding: 15px; border-radius: 8px; margin-bottom: 10px;
-            text-align: left; display: flex; justify-content: space-between; align-items: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .card-info h4 { margin: 0 0 5px 0; color: #ff4b2b; }
         .card-info p { margin: 0; font-size: 14px; color: #ccc; }
         .botoes-card { display: flex; gap: 8px; align-items: center; }
 
-        /* ====== O HEROI: GLOBO GAIOLA 3D ====== */
-        .globo-bingo-container {
+        /* ====== PALCO 3D DA BOLA ====== */
+        .palco-3d {
+            perspective: 800px;
+            width: 160px; 
+            height: 160px;
+            margin: 30px auto;
             position: relative;
-            width: 220px;
-            height: 220px;
-            margin: 40px auto;
-            perspective: 1000px;
-            transform-style: preserve-3d;
-            /* Transição suave para quando ela voltar ao normal ou avançar */
-            transition: transform 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
         }
 
-        /* CLASSE CRUCIAL: Faz a gaiola INTEIRA rolar e avançar na cara do usuário */
-        .globo-avancando-3d {
-            transform: scale(2.2) rotate(720deg) translateY(15px);
-            z-index: 999;
-        }
-
-        /* O fundo de vidro acoplado ao container */
-        .globo-vidro {
-            position: absolute; top:0; left:0; width:100%; height:100%;
+        .fundo-bola, .luz-sombra, .eixo-3d {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), rgba(0,0,0,0.6));
-            box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 0 30px rgba(255,255,255,0.1);
         }
 
-        /* Espaço interno das bolinhas físicas */
-        .physics-container {
-            position: absolute; top:0; left:0; width:100%; height:100%;
-            border-radius: 50%;
-            overflow: hidden;
-            z-index: 2;
-        }
+        .fundo-bola { background-color: #ff4b2b; }
 
-        .mini-bola {
-            position: absolute; top:0; left:0;
-            width: 16px; height: 16px;
-            border-radius: 50%;
-            box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.4);
-        }
-
-        /* Estrutura dos aros metálicos da gaiola */
-        .wireframe-container {
-            position: absolute; top:0; left:0; width:100%; height:100%;
-            transform-style: preserve-3d;
-            z-index: 3;
+        .luz-sombra {
+            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.5) 0%, transparent 40%),
+                        radial-gradient(circle at 65% 65%, transparent 40%, rgba(0,0,0,0.8) 100%);
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.6), 0 15px 25px rgba(0,0,0,0.4);
+            z-index: 10;
             pointer-events: none;
         }
 
-        .anel {
-            position: absolute; top:0; left:0; width:100%; height:100%;
-            border-radius: 50%;
-            border: 2px dashed rgba(255,255,255,0.4);
-            box-sizing: border-box;
-        }
-        .anel-1 { transform: rotateY(0deg); }
-        .anel-2 { transform: rotateY(45deg); }
-        .anel-3 { transform: rotateY(90deg); }
-        .anel-4 { transform: rotateY(135deg); }
+        .eixo-3d { transform-style: preserve-3d; }
 
-        /* ====== NÚMERO SORTEADO EM DESTAQUE NO MEIO DO GLOBO ====== */
-        .numero-centro-globo {
+        .face-numero {
             position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            width: 65px; height: 65px;
-            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ff4b2b 75%, #990000 100%);
-            border-radius: 50%;
+            width: 80px; height: 80px;
+            background: white; border-radius: 50%;
+            top: 40px; left: 40px;
+            transform: translateZ(80px);
             display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 28px; font-weight: bold;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.7);
-            z-index: 10;
-            opacity: 0;
-            border: 3px solid #fff;
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2), opacity 0.3s;
-        }
-        
-        .numero-centro-globo.mostrar {
-            transform: translate(-50%, -50%) scale(1.2);
-            opacity: 1;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
+            backface-visibility: hidden;
         }
 
-        /* ====== CAIXA DE HISTÓRICO DA PARTIDA ====== */
+        .face-numero span { font-size: 40px; font-weight: bold; color: #ff4b2b; transition: opacity 0.2s; }
+
+        .girando { animation: rolarFrente 0.25s linear infinite; }
+
+        @keyframes rolarFrente {
+            from { transform: rotateX(0deg); }
+            to { transform: rotateX(-360deg); }
+        }
+
+        /* ====== CAIXA DE NÚMEROS SORTEADOS ====== */
         .historico-container {
-            background-color: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 12px;
-            text-align: left; margin-top: 20px; min-height: 80px; max-height: 180px; overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: left;
+            margin-top: 20px;
+            min-height: 80px;
+            max-height: 200px;
+            overflow-y: auto;
         }
         .numero-sorteado {
-            display: inline-block; padding: 8px 12px; background-color: #ff4b2b;
-            color: white; border-radius: 6px; font-weight: bold; margin: 5px;
+            display: inline-block;
+            padding: 8px 12px;
+            background-color: #ff4b2b;
+            color: white;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            animation: fadeIn 0.3s ease-in;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>🎱 Bingo Gaiola 3D Realtime</h2>
+        <h2>🎱 Bingo 3D Realtime</h2>
 
+        <!-- TELA 1: LOGIN DE USUÁRIO -->
         <div id="tela-login" class="tela ativa">
             <h3>Selecione sua conta:</h3>
             <div id="lista-usuarios" style="margin-top: 20px;"></div>
         </div>
 
+        <!-- TELA 2: MENU PRINCIPAL -->
         <div id="tela-menu" class="tela">
             <h3 id="bem-vindo-texto" style="color: #00d2ff;"></h3>
-            <button onclick="mudarTela('tela-historico')" class="btn-secundario" style="margin-bottom: 25px; width: 100%;">📜 Ver Meus Jogos Anteriores</button>
+            
+            <button onclick="mudarTela('tela-historico')" class="btn-secundario" style="margin-bottom: 25px; width: 100%;">
+                📜 Ver Meus Jogos Anteriores
+            </button>
 
             <h4>Começar um Novo Jogo:</h4>
             <div style="margin-bottom: 20px;">
@@ -211,45 +208,47 @@
                 <button onclick="iniciarNovoJogo(100)">1 a 100</button>
                 <button onclick="mostrarDivPersonalizado()">Personalizado</button>
             </div>
+
             <div id="div-personalizado" style="display: none; margin-bottom: 20px;">
                 <input type="number" id="input-limite" placeholder="Ex: 200">
                 <button onclick="iniciarJogoPersonalizado()">Criar</button>
             </div>
+
             <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
             <button onclick="fazerLogout()" style="background: transparent; border: 1px solid #555; color: #ccc;">Sair da Conta</button>
         </div>
 
+        <!-- TELA 3: HISTÓRICO DE JOGOS -->
         <div id="tela-historico" class="tela">
-            <button onclick="mudarTela('tela-menu')" class="btn-secundario" style="margin-bottom: 20px;">⬅️ Voltar</button>
+            <button onclick="mudarTela('tela-menu')" class="btn-secundario" style="margin-bottom: 20px;">⬅️ Voltar ao Menu</button>
+            
             <h3>Seu Histórico de Jogos</h3>
             <div id="lista-jogos-salvos" style="max-height: 400px; overflow-y: auto; margin-top: 20px;"></div>
         </div>
 
+        <!-- TELA 4: O JOGO ROLANDO -->
         <div id="tela-jogo" class="tela">
             <button onclick="mudarTela('tela-menu')" class="btn-secundario" style="margin-bottom: 10px;">⬅️ Voltar ao Menu</button>
-            <p style="font-size: 12px; color: #aaa; margin-top: 0;">(Sincronizando na nuvem ☁️)</p>
+            <p style="font-size: 12px; color: #aaa; margin-top: 0;">(Sincronizando ao vivo na nuvem ☁️)</p>
             
             <h3 id="titulo-jogo"></h3>
             
-            <div class="globo-bingo-container" id="globo-gaiola-total">
-                <div class="globo-vidro"></div>
-                
-                <div class="physics-container" id="physics-container"></div>
-                
-                <div class="wireframe-container">
-                    <div class="anel anel-1"></div>
-                    <div class="anel anel-2"></div>
-                    <div class="anel anel-3"></div>
-                    <div class="anel anel-4"></div>
+            <!-- A BOLA 3D -->
+            <div class="palco-3d">
+                <div class="fundo-bola"></div>
+                <div class="eixo-3d" id="eixo-bola">
+                    <div class="face-numero">
+                        <span id="numero-atual">?</span>
+                    </div>
                 </div>
-
-                <div class="numero-centro-globo" id="numero-display-interno">?</div>
+                <div class="luz-sombra"></div>
             </div>
             
-            <button id="btn-sortear" onclick="sortearNumero()" class="btn-sucesso" style="padding: 15px 30px; font-size: 20px; margin-bottom: 25px; width: 80%;">
+            <button id="btn-sortear" onclick="sortearNumero()" class="btn-sucesso" style="padding: 15px 30px; font-size: 20px; margin-bottom: 15px;">
                 Sortear Número
             </button>
 
+            <!-- CAIXA DO HISTÓRICO DA PARTIDA -->
             <div class="historico-container">
                 <h4 style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 10px;">
                     Números Sorteados (<span id="contador">0</span>/<span id="total">0</span>):
@@ -259,6 +258,7 @@
         </div>
     </div>
 
+    <!-- ====== LÓGICA DO SISTEMA COM FIREBASE ====== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -270,125 +270,35 @@
             projectId: "call-9cc3b",
             storageBucket: "call-9cc3b.firebasestorage.app",
             messagingSenderId: "919168566449",
-            appId: "1:919168566449:web:b57c4c4020bf3cace30e90"
+            appId: "1:919168566449:web:b57c4c4020bf3cace30e90",
+            measurementId: "G-GYBCF1LG64"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // VARIÁVEIS GLOBAIS
         window.usuarios = [{ id: 1, nome: "Luiz Leão" }];
         window.usuarioAtual = null;
         window.jogoAtual = null; 
         window.todosOsJogos = [];
         window.sorteando = false;
 
-        // ====== 1. MOTOR DE FÍSICA REALISTA DAS BOLINHAS ======
-        window.iniciarFisica = function() {
-            const container = document.getElementById('physics-container');
-            container.innerHTML = '';
-            window.bolinhasFisicas = [];
-            const cores = ['#ff4b2b', '#38ef7d', '#ffd700', '#00d2ff', '#fff', '#ff416c', '#11998e'];
-            
-            for(let i=0; i<30; i++) {
-                let el = document.createElement('div');
-                el.className = 'mini-bola';
-                el.style.backgroundColor = cores[i % cores.length];
-                container.appendChild(el);
-                
-                window.bolinhasFisicas.push({
-                    el: el,
-                    x: 110 + (Math.random() * 50 - 25),
-                    y: 110 + (Math.random() * 50 - 25),
-                    vx: Math.random() * 6 - 3,
-                    vy: Math.random() * 6 - 3
-                });
-            }
-            window.caosGaiola = 0; 
-            
-            if (!window.fisicaRodando) {
-                window.fisicaRodando = true;
-                requestAnimationFrame(loopFisica);
-            }
-        };
-
-        function loopFisica() {
-            let cx = 110, cy = 110, raioGaiola = 110, raioBola = 8;
-            let distMaxima = raioGaiola - raioBola - 4; 
-            
-            for(let i=0; i<window.bolinhasFisicas.length; i++) {
-                let b = window.bolinhasFisicas[i];
-                
-                // Gravidade constante empurrando para baixo
-                b.vy += 0.45; 
-                b.vx *= 0.99;
-                b.vy *= 0.99;
-
-                b.x += b.vx;
-                b.y += b.vy;
-
-                let dx = b.x - cx; 
-                let dy = b.y - cy;
-                let distanciaDoCentro = Math.sqrt(dx*dx + dy*dy);
-                
-                if(distanciaDoCentro > distMaxima) {
-                    let nx = dx / distanciaDoCentro; 
-                    let ny = dy / distanciaDoCentro;
-                    
-                    b.x = cx + nx * distMaxima; 
-                    b.y = cy + ny * distMaxima;
-                    
-                    let dot = b.vx*nx + b.vy*ny;
-                    b.vx -= 2 * dot * nx * 0.6;
-                    b.vy -= 2 * dot * ny * 0.6;
-
-                    // Se a gaiola estiver rolando/girando, joga impulsos caóticos nas bolinhas internas
-                    if(window.caosGaiola > 0) {
-                        b.vx += (Math.random() - 0.5) * window.caosGaiola;
-                        b.vy -= Math.random() * window.caosGaiola * 1.6; 
-                    }
-                }
-            }
-
-            // Colisões entre as próprias esferas menores
-            for(let i=0; i<window.bolinhasFisicas.length; i++) {
-                for(let j=i+1; j<window.bolinhasFisicas.length; j++) {
-                    let b1 = window.bolinhasFisicas[i]; 
-                    let b2 = window.bolinhasFisicas[j];
-                    let dx = b2.x - b1.x; 
-                    let dy = b2.y - b1.y;
-                    let dist = Math.sqrt(dx*dx + dy*dy);
-                    
-                    if(dist < raioBola * 2) {
-                        let nx = dx/dist; let ny = dy/dist;
-                        let overlap = (raioBola*2) - dist;
-                        b1.x -= nx * overlap/2; b1.y -= ny * overlap/2;
-                        b2.x += nx * overlap/2; b2.y += ny * overlap/2;
-                        
-                        let kx = b1.vx - b2.vx; let ky = b1.vy - b2.vy;
-                        let forcaImpacto = (kx*nx + ky*ny);
-                        b1.vx -= forcaImpacto * nx * 0.85; b1.vy -= forcaImpacto * ny * 0.85;
-                        b2.vx += forcaImpacto * nx * 0.85; b2.vy += forcaImpacto * ny * 0.85;
-                    }
-                }
-            }
-
-            for(let b of window.bolinhasFisicas) {
-                b.el.style.transform = `translate(${b.x - raioBola}px, ${b.y - raioBola}px)`;
-            }
-
-            requestAnimationFrame(loopFisica);
-        }
-
-        // ====== 2. SINCRONIZAÇÃO E CONTROLE DO FIREBASE ======
+        // --- ESCUTANDO O BANCO DE DADOS EM TEMPO REAL ---
         onValue(ref(db, 'jogos'), (snapshot) => {
             const data = snapshot.val();
             window.todosOsJogos = data ? Object.values(data) : [];
-            window.todosOsJogos.forEach(j => { if (!j.sorteados) j.sorteados = []; });
+            
+            // Correção 1: Garante que todo jogo vindo do Firebase tenha a propriedade de array iniciada
+            window.todosOsJogos.forEach(j => {
+                if (!j.sorteados) j.sorteados = [];
+            });
             
             if (document.getElementById('tela-historico').classList.contains('ativa')) {
                 window.renderizarHistoricoJogos();
             }
 
+            // Correção 2: NÃO interrompe o jogo com dados externos se este dispositivo estiver no meio da animação do giro
             if (window.jogoAtual && !window.sorteando) {
                 const jogoAtualizado = window.todosOsJogos.find(j => j.id === window.jogoAtual.id);
                 if (jogoAtualizado) {
@@ -396,29 +306,30 @@
                     window.atualizarPlacarSorteados();
                     window.verificarStatusBotao();
                     
-                    const gaiolaTotal = document.getElementById('globo-gaiola-total');
-                    const displayNum = document.getElementById('numero-display-interno');
-                    
                     if (window.jogoAtual.sorteados.length > 0) {
-                        displayNum.innerText = window.jogoAtual.sorteados[window.jogoAtual.sorteados.length - 1];
-                        gaiolaTotal.classList.add('globo-avancando-3d');
-                        displayNum.classList.add('mostrar');
+                        document.getElementById('numero-atual').innerText = window.jogoAtual.sorteados[window.jogoAtual.sorteados.length - 1];
                     } else {
-                        displayNum.innerText = '?';
-                        gaiolaTotal.classList.remove('globo-avancando-3d');
-                        displayNum.classList.remove('mostrar');
+                        document.getElementById('numero-atual').innerText = '?';
                     }
                 }
             }
         });
 
+        // --- NAVEGAÇÃO DE TELAS ---
         window.mudarTela = function(idTelaAlvo) {
-            document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
+            document.querySelectorAll('.tela').forEach(tela => tela.classList.remove('ativa'));
             document.getElementById(idTelaAlvo).classList.add('ativa');
-            if (idTelaAlvo === 'tela-historico') window.renderizarHistoricoJogos();
-            if (idTelaAlvo === 'tela-menu') { window.jogoAtual = null; window.sorteando = false; }
+
+            if (idTelaAlvo === 'tela-historico') {
+                window.renderizarHistoricoJogos();
+            }
+            if (idTelaAlvo === 'tela-menu') {
+                window.jogoAtual = null; 
+                window.sorteando = false; // Destrava preventivamente ao voltar pro menu
+            }
         }
 
+        // --- SISTEMA DE LOGIN ---
         window.renderizarUsuarios = function() {
             const container = document.getElementById('lista-usuarios');
             container.innerHTML = '';
@@ -437,18 +348,47 @@
             window.mudarTela('tela-menu');
         }
 
-        window.fazerLogout = function() { window.usuarioAtual = null; window.mudarTela('tela-login'); }
-
-        window.iniciarNovoJogo = function(limite) {
-            const id = Date.now().toString();
-            const novo = { id: id, idUsuario: window.usuarioAtual.id, limite: limite, sorteados: [], dataCriacao: new Date().toLocaleString('pt-BR') };
-            set(ref(db, 'jogos/' + id), novo).then(() => window.carregarJogoNaTela(novo)).catch(e => alert("Erro no banco."));
+        window.fazerLogout = function() {
+            window.usuarioAtual = null;
+            window.mudarTela('tela-login');
         }
 
-        window.mostrarDivPersonalizado = function() { document.getElementById('div-personalizado').style.display = 'block'; }
+        // --- GERENCIAMENTO DE JOGOS ---
+        window.iniciarNovoJogo = function(limite) {
+            const idGerado = Date.now().toString();
+            const novoJogo = {
+                id: idGerado,
+                idUsuario: window.usuarioAtual.id,
+                limite: limite,
+                sorteados: [], 
+                dataCriacao: new Date().toLocaleString('pt-BR')
+            };
+
+            // Correção 3: Usa catch para capturar erros de permissão de escrita do Firebase
+            set(ref(db, 'jogos/' + idGerado), novoJogo)
+                .then(() => {
+                    window.jogoAtual = novoJogo;
+                    window.carregarJogoNaTela(novoJogo);
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Erro crítico: Verifique se a aba 'Regras' do seu Realtime Database está definida como true para .read e .write.");
+                });
+        }
+
+        window.mostrarDivPersonalizado = function() {
+            document.getElementById('div-personalizado').style.display = 'block';
+        }
+
         window.iniciarJogoPersonalizado = function() {
             const limite = parseInt(document.getElementById('input-limite').value);
-            if (limite > 1) { window.iniciarNovoJogo(limite); document.getElementById('div-personalizado').style.display = 'none'; }
+            if (limite > 1) {
+                window.iniciarNovoJogo(limite);
+                document.getElementById('div-personalizado').style.display = 'none';
+                document.getElementById('input-limite').value = '';
+            } else {
+                alert("Por favor, insira um número válido.");
+            }
         }
 
         window.carregarJogoNaTela = function(jogo) {
@@ -459,114 +399,148 @@
             document.getElementById('titulo-jogo').innerText = `Bingo (1 a ${jogo.limite})`;
             document.getElementById('total').innerText = jogo.limite;
             
-            const gaiolaTotal = document.getElementById('globo-gaiola-total');
-            const displayNum = document.getElementById('numero-display-interno');
-            
             if (jogo.sorteados.length > 0) {
-                displayNum.innerText = jogo.sorteados[jogo.sorteados.length - 1];
-                gaiolaTotal.classList.add('globo-avancando-3d');
-                displayNum.classList.add('mostrar');
+                document.getElementById('numero-atual').innerText = jogo.sorteados[jogo.sorteados.length - 1];
             } else {
-                displayNum.innerText = '?';
-                gaiolaTotal.classList.remove('globo-avancando-3d');
-                displayNum.classList.remove('mostrar');
+                document.getElementById('numero-atual').innerText = '?';
             }
+
             window.atualizarPlacarSorteados();
             window.verificarStatusBotao();
         }
 
-        // ====== 3. O SORTEIO ACIONANDO O ROLO COMPRESSOR 3D ======
+        // --- LÓGICA DO SORTEIO 3D ---
         window.sortearNumero = function() {
             if (window.sorteando || !window.jogoAtual) return; 
             if (!window.jogoAtual.sorteados) window.jogoAtual.sorteados = [];
-            if (window.jogoAtual.sorteados.length >= window.jogoAtual.limite) { alert("Sorteio finalizado!"); return; }
+
+            if (window.jogoAtual.sorteados.length >= window.jogoAtual.limite) {
+                alert("Todos os números já foram sorteados!");
+                return;
+            }
 
             window.sorteando = true;
             const btnSortear = document.getElementById('btn-sortear');
             btnSortear.disabled = true;
-            btnSortear.innerText = "Gaiola Rolando...";
+            btnSortear.innerText = "Sorteando...";
             
-            const gaiolaTotal = document.getElementById('globo-gaiola-total');
-            const displayNum = document.getElementById('numero-display-interno');
+            document.getElementById('numero-atual').style.opacity = '0';
+            const eixo = document.getElementById('eixo-bola');
+            eixo.classList.add('girando');
 
-            // 1. Recua e zera o globo instantaneamente para preparar o impulso
-            gaiolaTotal.classList.remove('globo-avancando-3d');
-            displayNum.classList.remove('mostrar');
+            let novoSorteio;
+            do {
+                novoSorteio = Math.floor(Math.random() * window.jogoAtual.limite) + 1;
+            } while (window.jogoAtual.sorteados.includes(novoSorteio));
 
-            // Pequeno delay para resetar o frame antes do impacto visual
-            setTimeout(() => {
-                // 2. A GAIOLA INTEIRA ENTRA EM ACELERAÇÃO E SE ATIRA NA TELA
-                gaiolaTotal.classList.add('globo-avancando-3d');
-                window.caosGaiola = 20; // Ativa a trepidação e mistura frenética das bolinhas internas
+            // Atualiza localmente para a animação rodar fluida
+            const copiaSorteados = [...window.jogoAtual.sorteados, novoSorteio];
 
-                let novoSorteio;
-                do { novoSorteio = Math.floor(Math.random() * window.jogoAtual.limite) + 1; } 
-                while (window.jogoAtual.sorteados.includes(novoSorteio));
+            // Correção 4: Sincroniza via Promise e usa catch para destravar o botão caso a internet falhe ou o Firebase recuse
+            update(ref(db, 'jogos/' + window.jogoAtual.id), {
+                sorteados: copiaSorteados
+            })
+            .then(() => {
+                setTimeout(() => {
+                    eixo.classList.remove('girando');
+                    
+                    window.jogoAtual.sorteados = copiaSorteados;
+                    document.getElementById('numero-atual').innerText = novoSorteio;
+                    document.getElementById('numero-atual').style.opacity = '1';
+                    
+                    window.atualizarPlacarSorteados();
+                    window.verificarStatusBotao();
 
-                const copia = [...window.jogoAtual.sorteados, novoSorteio];
-
-                update(ref(db, 'jogos/' + window.jogoAtual.id), { sorteados: copia })
-                .then(() => {
-                    // Mantém ela rolando em tamanho gigante por 1.4 segundos na cara do player
-                    setTimeout(() => {
-                        window.caosGaiola = 0; // Desliga o caos, as bolinhas voltam a assentar no fundo
-                        
-                        window.jogoAtual.sorteados = copia;
-                        displayNum.innerText = novoSorteio;
-                        
-                        // Revela o número bem no coração do globo gigante
-                        displayNum.classList.add('mostrar');
-                        
-                        window.atualizarPlacarSorteados();
-                        window.verificarStatusBotao();
-                        window.sorteando = false;
-                    }, 1400);
-                }).catch(e => {
-                    gaiolaTotal.classList.remove('globo-avancando-3d');
-                    window.caosGaiola = 0; window.sorteando = false; window.verificarStatusBotao();
-                });
-            }, 150);
+                    window.sorteando = false;
+                }, 1200);
+            })
+            .catch(err => {
+                console.error("Erro ao salvar número:", err);
+                alert("O Firebase rejeitou o sorteio. Verifique suas regras de banco de dados.");
+                
+                // Força o destravamento total da interface em caso de falha de rede
+                eixo.classList.remove('girando');
+                document.getElementById('numero-atual').style.opacity = '1';
+                window.verificarStatusBotao();
+                window.sorteando = false;
+            });
         }
 
         window.atualizarPlacarSorteados = function() {
-            const l = window.jogoAtual.sorteados || [];
-            document.getElementById('contador').innerText = l.length;
-            const listaHtml = [...l].sort((a,b)=>a-b).map(n => `<span class="numero-sorteado">${n}</span>`).join('');
+            const lista = window.jogoAtual.sorteados || [];
+            document.getElementById('contador').innerText = lista.length;
+            
+            const arrayOrdenado = [...lista].sort((a, b) => a - b);
+            const listaHtml = arrayOrdenado.map(num => `<span class="numero-sorteado">${num}</span>`).join('');
             document.getElementById('lista-sorteados').innerHTML = listaHtml;
         }
 
         window.verificarStatusBotao = function() {
-            const btn = document.getElementById('btn-sortear');
-            if ((window.jogoAtual.sorteados||[]).length >= window.jogoAtual.limite) { btn.disabled = true; btn.innerText = "Finalizado"; } 
-            else { btn.disabled = false; btn.innerText = "Sortear Número"; }
+            const lista = window.jogoAtual.sorteados || [];
+            const btnSortear = document.getElementById('btn-sortear');
+            if (lista.length >= window.jogoAtual.limite) {
+                btnSortear.disabled = true;
+                btnSortear.innerText = "Sorteio Finalizado";
+            } else {
+                btnSortear.disabled = false;
+                btnSortear.innerText = "Sortear Número";
+            }
         }
 
+        // --- LÓGICA DA TELA DE HISTÓRICO ---
         window.renderizarHistoricoJogos = function() {
-            const cont = document.getElementById('lista-jogos-salvos'); cont.innerHTML = '';
-            const jogos = window.todosOsJogos.filter(j => j.idUsuario === window.usuarioAtual.id).reverse(); 
-            if (jogos.length === 0) { cont.innerHTML = '<p>Nenhum jogo.</p>'; return; }
+            const container = document.getElementById('lista-jogos-salvos');
+            container.innerHTML = '';
 
-            jogos.forEach(j => {
-                const q = (j.sorteados || []).length; const f = q === j.limite;
-                const c = document.createElement('div'); c.className = 'card-jogo';
-                c.innerHTML = `
+            const jogosDoUsuario = window.todosOsJogos
+                .filter(j => j.idUsuario === window.usuarioAtual.id)
+                .reverse(); 
+
+            if (jogosDoUsuario.length === 0) {
+                container.innerHTML = '<p style="color: #ccc;">Nenhum jogo encontrado.</p>';
+                return;
+            }
+
+            jogosDoUsuario.forEach(jogo => {
+                const listaSorteados = jogo.sorteados || [];
+                const finalizado = listaSorteados.length === jogo.limite;
+                const card = document.createElement('div');
+                card.className = 'card-jogo';
+                
+                card.innerHTML = `
                     <div class="card-info">
-                        <h4>Bingo de 1 a ${j.limite}</h4><p>🗓️ ${j.dataCriacao}</p><p>🎱 Sorteados: ${q} / ${j.limite}</p>
+                        <h4>Bingo de 1 a ${jogo.limite}</h4>
+                        <p>🗓️ ${jogo.dataCriacao}</p>
+                        <p>🎱 Sorteados: ${listaSorteados.length} / ${jogo.limite}</p>
                     </div>
                     <div class="botoes-card">
-                        <button class="${f ? 'btn-secundario' : 'btn-sucesso'} btn-acao" onclick="retomarJogo('${j.id}')">${f ? '👁️ Ver' : '▶️ Seguir'}</button>
-                        <button class="btn-lixeira" onclick="excluirJogo('${j.id}')">🗑️</button>
+                        <button class="${finalizado ? 'btn-secundario' : 'btn-sucesso'} btn-acao" onclick="retomarJogo('${jogo.id}')">
+                            ${finalizado ? '👁️ Ver' : '▶️ Seguir'}
+                        </button>
+                        <button class="btn-lixeira" onclick="excluirJogo('${jogo.id}')" title="Apagar Jogo">
+                            🗑️
+                        </button>
                     </div>
                 `;
-                cont.appendChild(c);
+                container.appendChild(card);
             });
         }
 
-        window.retomarJogo = function(id) { const j = window.todosOsJogos.find(j => j.id === id); if(j) window.carregarJogoNaTela(j); }
-        window.excluirJogo = function(id) { if(confirm("Apagar?")) remove(ref(db, 'jogos/'+id)); }
+        window.retomarJogo = function(idDoJogo) {
+            const jogoEncontrado = window.todosOsJogos.find(j => j.id === idDoJogo);
+            if (jogoEncontrado) {
+                window.carregarJogoNaTela(jogoEncontrado);
+            }
+        }
 
+        window.excluirJogo = function(idDoJogo) {
+            if (confirm("Tem certeza que deseja apagar este jogo? Esta ação não pode ser desfeita.")) {
+                remove(ref(db, 'jogos/' + idDoJogo)).catch(err => alert("Erro ao apagar: " + err));
+            }
+        }
+
+        // --- INICIALIZAÇÃO DA PÁGINA ---
         window.renderizarUsuarios();
-        window.iniciarFisica();
     </script>
 </body>
 </html>
