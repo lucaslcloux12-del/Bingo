@@ -1,20 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <script type="module">
-    import { db } from './firebase-config.js';
-    import { ref, set, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-    // Agora você pode usar 'db', 'ref', 'set' diretamente aqui!
-    // Exemplo para salvar:
-    // set(ref(db, 'jogos/' + idDoJogo), dadosDoJogo);
-    
-    // Exemplo para ler:
-    // onValue(ref(db, 'jogos/'), (snapshot) => { ... });
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo 3D - Sistema de Usuários</title>
+    <title>Bingo 3D - Sincronizado</title>
     <style>
         /* ====== BASE E LAYOUT ====== */
         body {
@@ -78,7 +67,23 @@
 
         .btn-secundario { background: #444; }
         .btn-sucesso { background: linear-gradient(to right, #11998e, #38ef7d); }
-        .btn-acao { padding: 8px 12px; font-size: 14px; margin: 0 5px; }
+        .btn-acao { padding: 8px 12px; font-size: 14px; margin: 0; }
+        
+        /* Botão de lixeira pequeno */
+        .btn-lixeira {
+            background: transparent;
+            border: 1px solid #ff4b2b;
+            color: white;
+            padding: 8px;
+            font-size: 14px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-lixeira:hover {
+            background: rgba(255, 75, 43, 0.2);
+        }
 
         input[type="number"] {
             padding: 10px;
@@ -104,6 +109,7 @@
         }
         .card-info h4 { margin: 0 0 5px 0; color: #ff4b2b; }
         .card-info p { margin: 0; font-size: 14px; color: #ccc; }
+        .botoes-card { display: flex; gap: 8px; align-items: center; }
 
         /* ====== PALCO 3D DA BOLA ====== */
         .palco-3d {
@@ -180,14 +186,17 @@
 <body>
 
     <div class="container">
-        <h2>🎱 Bingo 3D</h2>
+        <h2>🎱 Bingo 3D Realtime</h2>
 
+        <!-- TELA 1: LOGIN DE USUÁRIO -->
         <div id="tela-login" class="tela ativa">
             <h3>Selecione sua conta:</h3>
             <div id="lista-usuarios" style="margin-top: 20px;">
-                </div>
+                <!-- Usuários gerados pelo JS -->
+            </div>
         </div>
 
+        <!-- TELA 2: MENU PRINCIPAL -->
         <div id="tela-menu" class="tela">
             <h3 id="bem-vindo-texto" style="color: #00d2ff;"></h3>
             
@@ -212,20 +221,24 @@
             <button onclick="fazerLogout()" style="background: transparent; border: 1px solid #555; color: #ccc;">Sair da Conta</button>
         </div>
 
+        <!-- TELA 3: HISTÓRICO DE JOGOS -->
         <div id="tela-historico" class="tela">
             <button onclick="mudarTela('tela-menu')" class="btn-secundario" style="margin-bottom: 20px;">⬅️ Voltar ao Menu</button>
             
             <h3>Seu Histórico de Jogos</h3>
             <div id="lista-jogos-salvos" style="max-height: 400px; overflow-y: auto; margin-top: 20px;">
-                </div>
+                <!-- Jogos injetados pelo JS -->
+            </div>
         </div>
 
+        <!-- TELA 4: O JOGO ROLANDO -->
         <div id="tela-jogo" class="tela">
             <button onclick="mudarTela('tela-menu')" class="btn-secundario" style="margin-bottom: 10px;">⬅️ Voltar ao Menu</button>
-            <p style="font-size: 12px; color: #aaa; margin-top: 0;">(O jogo é salvo automaticamente)</p>
+            <p style="font-size: 12px; color: #aaa; margin-top: 0;">(Sincronizando ao vivo na nuvem ☁️)</p>
             
             <h3 id="titulo-jogo"></h3>
             
+            <!-- A BOLA 3D -->
             <div class="palco-3d">
                 <div class="fundo-bola"></div>
                 <div class="eixo-3d" id="eixo-bola">
@@ -240,6 +253,7 @@
                 Sortear Número
             </button>
 
+            <!-- CAIXA DO HISTÓRICO DA PARTIDA -->
             <div class="historico-container">
                 <h4 style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 10px;">
                     Números Sorteados (<span id="contador">0</span>/<span id="total">0</span>):
@@ -249,83 +263,123 @@
         </div>
     </div>
 
-    <script>
-        // --- BANCO DE DADOS (Simulado) ---
-        const usuarios = [
-            { id: 1, nome: "Luiz Leão" }
-            // Para adicionar mais no futuro, basta colocar vírgula e: { id: 2, nome: "João" }
-        ];
+    <!-- ====== LÓGICA DO SISTEMA COM FIREBASE ====== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        let usuarioAtual = null;
-        let jogoAtual = null; // Guarda o objeto do jogo que está rolando
-        let sorteando = false; // Trava do botão 3D
+        // CONFIGURAÇÃO DO FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfG1gFI4SoEdttmhwORZt92_9bgqJcsgw",
+            authDomain: "call-9cc3b.firebaseapp.com",
+            databaseURL: "https://call-9cc3b-default-rtdb.firebaseio.com",
+            projectId: "call-9cc3b",
+            storageBucket: "call-9cc3b.firebasestorage.app",
+            messagingSenderId: "919168566449",
+            appId: "1:919168566449:web:b57c4c4020bf3cace30e90",
+            measurementId: "G-GYBCF1LG64"
+        };
 
-        // Carrega os jogos do localStorage (se não tiver, cria um array vazio)
-        let todosOsJogos = JSON.parse(localStorage.getItem('bingo_historico_jogos')) || [];
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // VARIÁVEIS GLOBAIS
+        window.usuarios = [{ id: 1, nome: "Luiz Leão" }];
+        window.usuarioAtual = null;
+        window.jogoAtual = null; 
+        window.todosOsJogos = [];
+        window.sorteando = false;
+
+        // --- ESCUTANDO O BANCO DE DADOS EM TEMPO REAL ---
+        onValue(ref(db, 'jogos'), (snapshot) => {
+            const data = snapshot.val();
+            window.todosOsJogos = data ? Object.values(data) : [];
+            
+            // Se estiver na tela de histórico, atualiza a lista
+            if (document.getElementById('tela-historico').classList.contains('ativa')) {
+                window.renderizarHistoricoJogos();
+            }
+
+            // Se o jogo aberto no momento foi atualizado (por outro aparelho), atualiza a tela instantaneamente
+            if (window.jogoAtual) {
+                const jogoAtualizado = window.todosOsJogos.find(j => j.id === window.jogoAtual.id);
+                if (jogoAtualizado) {
+                    window.jogoAtual = jogoAtualizado;
+                    if(!window.jogoAtual.sorteados) window.jogoAtual.sorteados = [];
+                    window.atualizarPlacarSorteados();
+                    window.verificarStatusBotao();
+                    
+                    // Se houver números sorteados, atualiza a bola na tela
+                    if(window.jogoAtual.sorteados.length > 0 && !window.sorteando) {
+                        document.getElementById('numero-atual').innerText = window.jogoAtual.sorteados[window.jogoAtual.sorteados.length - 1];
+                    }
+                }
+            }
+        });
 
         // --- NAVEGAÇÃO DE TELAS ---
-        function mudarTela(idTelaAlvo) {
+        window.mudarTela = function(idTelaAlvo) {
             document.querySelectorAll('.tela').forEach(tela => tela.classList.remove('ativa'));
             document.getElementById(idTelaAlvo).classList.add('ativa');
 
             if (idTelaAlvo === 'tela-historico') {
-                renderizarHistoricoJogos();
+                window.renderizarHistoricoJogos();
+            }
+            if (idTelaAlvo === 'tela-menu') {
+                window.jogoAtual = null; // Sai do modo de partida
             }
         }
 
         // --- SISTEMA DE LOGIN ---
-        function renderizarUsuarios() {
+        window.renderizarUsuarios = function() {
             const container = document.getElementById('lista-usuarios');
             container.innerHTML = '';
-            usuarios.forEach(user => {
+            window.usuarios.forEach(user => {
                 const btn = document.createElement('button');
                 btn.innerText = `👤 Entrar como ${user.nome}`;
                 btn.style.width = '100%';
-                btn.onclick = () => fazerLogin(user);
+                btn.onclick = () => window.fazerLogin(user);
                 container.appendChild(btn);
             });
         }
 
-        function fazerLogin(user) {
-            usuarioAtual = user;
+        window.fazerLogin = function(user) {
+            window.usuarioAtual = user;
             document.getElementById('bem-vindo-texto').innerText = `Olá, ${user.nome}!`;
-            mudarTela('tela-menu');
+            window.mudarTela('tela-menu');
         }
 
-        function fazerLogout() {
-            usuarioAtual = null;
-            mudarTela('tela-login');
+        window.fazerLogout = function() {
+            window.usuarioAtual = null;
+            window.mudarTela('tela-login');
         }
 
         // --- GERENCIAMENTO DE JOGOS ---
-        function salvarNoBanco() {
-            localStorage.setItem('bingo_historico_jogos', JSON.stringify(todosOsJogos));
-        }
-
-        function iniciarNovoJogo(limite) {
-            // Cria a "ficha" do novo jogo
+        window.iniciarNovoJogo = function(limite) {
+            const idGerado = Date.now().toString();
             const novoJogo = {
-                id: Date.now(), // Gera um ID único baseado na data/hora atual
-                idUsuario: usuarioAtual.id,
+                id: idGerado,
+                idUsuario: window.usuarioAtual.id,
                 limite: limite,
-                sorteados: [],
+                sorteados: [], 
                 dataCriacao: new Date().toLocaleString('pt-BR')
             };
 
-            todosOsJogos.push(novoJogo);
-            salvarNoBanco();
+            // Salva o novo jogo no Firebase
+            set(ref(db, 'jogos/' + idGerado), novoJogo);
             
-            carregarJogoNaTela(novoJogo);
+            window.jogoAtual = novoJogo;
+            window.carregarJogoNaTela(novoJogo);
         }
 
-        function mostrarDivPersonalizado() {
+        window.mostrarDivPersonalizado = function() {
             document.getElementById('div-personalizado').style.display = 'block';
         }
 
-        function iniciarJogoPersonalizado() {
+        window.iniciarJogoPersonalizado = function() {
             const limite = parseInt(document.getElementById('input-limite').value);
             if (limite > 1) {
-                iniciarNovoJogo(limite);
+                window.iniciarNovoJogo(limite);
                 document.getElementById('div-personalizado').style.display = 'none';
                 document.getElementById('input-limite').value = '';
             } else {
@@ -333,35 +387,35 @@
             }
         }
 
-        function carregarJogoNaTela(jogo) {
-            jogoAtual = jogo;
-            mudarTela('tela-jogo');
+        window.carregarJogoNaTela = function(jogo) {
+            window.jogoAtual = jogo;
+            if(!window.jogoAtual.sorteados) window.jogoAtual.sorteados = [];
             
+            window.mudarTela('tela-jogo');
             document.getElementById('titulo-jogo').innerText = `Bingo (1 a ${jogo.limite})`;
             document.getElementById('total').innerText = jogo.limite;
             
-            // Se já tiver número sorteado (caso de continuar jogo), mostra o último. Se não, mostra "?"
-            if (jogo.sorteados.length > 0) {
-                // Pegando a ordem cronológica real salva (antes de ordenar numericamente para a tela)
+            if (jogo.sorteados && jogo.sorteados.length > 0) {
                 document.getElementById('numero-atual').innerText = jogo.sorteados[jogo.sorteados.length - 1];
             } else {
                 document.getElementById('numero-atual').innerText = '?';
             }
 
-            atualizarPlacarSorteados();
-            verificarStatusBotao();
+            window.atualizarPlacarSorteados();
+            window.verificarStatusBotao();
         }
 
         // --- LÓGICA DO SORTEIO 3D ---
-        function sortearNumero() {
-            if (sorteando || !jogoAtual) return; 
+        window.sortearNumero = function() {
+            if (window.sorteando || !window.jogoAtual) return; 
+            if (!window.jogoAtual.sorteados) window.jogoAtual.sorteados = [];
 
-            if (jogoAtual.sorteados.length >= jogoAtual.limite) {
+            if (window.jogoAtual.sorteados.length >= window.jogoAtual.limite) {
                 alert("Todos os números já foram sorteados!");
                 return;
             }
 
-            sorteando = true;
+            window.sorteando = true;
             const btnSortear = document.getElementById('btn-sortear');
             btnSortear.disabled = true;
             btnSortear.innerText = "Sorteando...";
@@ -370,42 +424,48 @@
             const eixo = document.getElementById('eixo-bola');
             eixo.classList.add('girando');
 
-            // Lógica para não repetir número
+            // Garante número único
             let novoSorteio;
             do {
-                novoSorteio = Math.floor(Math.random() * jogoAtual.limite) + 1;
-            } while (jogoAtual.sorteados.includes(novoSorteio));
+                novoSorteio = Math.floor(Math.random() * window.jogoAtual.limite) + 1;
+            } while (window.jogoAtual.sorteados.includes(novoSorteio));
 
-            // Salva no jogo atual e atualiza o banco de dados
-            jogoAtual.sorteados.push(novoSorteio);
-            salvarNoBanco();
+            // Atualiza array localmente primeiro
+            window.jogoAtual.sorteados.push(novoSorteio);
 
+            // Manda o novo array de números para a nuvem
+            update(ref(db, 'jogos/' + window.jogoAtual.id), {
+                sorteados: window.jogoAtual.sorteados
+            });
+
+            // Trava exata para a animação 3D do botão rodar
             setTimeout(() => {
                 eixo.classList.remove('girando');
                 
                 document.getElementById('numero-atual').innerText = novoSorteio;
                 document.getElementById('numero-atual').style.opacity = '1';
                 
-                atualizarPlacarSorteados();
-                verificarStatusBotao();
+                window.atualizarPlacarSorteados();
+                window.verificarStatusBotao();
 
-                sorteando = false;
+                window.sorteando = false;
             }, 1200);
         }
 
-        function atualizarPlacarSorteados() {
-            document.getElementById('contador').innerText = jogoAtual.sorteados.length;
+        window.atualizarPlacarSorteados = function() {
+            const lista = window.jogoAtual.sorteados || [];
+            document.getElementById('contador').innerText = lista.length;
             
-            // Cria uma cópia do array e ordena do menor pro maior só visualmente
-            const arrayOrdenado = [...jogoAtual.sorteados].sort((a, b) => a - b);
-            
+            // Ordena apenas visualmente
+            const arrayOrdenado = [...lista].sort((a, b) => a - b);
             const listaHtml = arrayOrdenado.map(num => `<span class="numero-sorteado">${num}</span>`).join('');
             document.getElementById('lista-sorteados').innerHTML = listaHtml;
         }
 
-        function verificarStatusBotao() {
+        window.verificarStatusBotao = function() {
+            const lista = window.jogoAtual.sorteados || [];
             const btnSortear = document.getElementById('btn-sortear');
-            if (jogoAtual.sorteados.length >= jogoAtual.limite) {
+            if (lista.length >= window.jogoAtual.limite) {
                 btnSortear.disabled = true;
                 btnSortear.innerText = "Sorteio Finalizado";
             } else {
@@ -415,12 +475,13 @@
         }
 
         // --- LÓGICA DA TELA DE HISTÓRICO ---
-        function renderizarHistoricoJogos() {
+        window.renderizarHistoricoJogos = function() {
             const container = document.getElementById('lista-jogos-salvos');
             container.innerHTML = '';
 
-            // Filtra apenas os jogos do usuário logado e inverte a ordem (mais recentes primeiro)
-            const jogosDoUsuario = todosOsJogos.filter(j => j.idUsuario === usuarioAtual.id).reverse();
+            const jogosDoUsuario = window.todosOsJogos
+                .filter(j => j.idUsuario === window.usuarioAtual.id)
+                .reverse(); // Do mais novo para o mais antigo
 
             if (jogosDoUsuario.length === 0) {
                 container.innerHTML = '<p style="color: #ccc;">Nenhum jogo encontrado.</p>';
@@ -428,20 +489,23 @@
             }
 
             jogosDoUsuario.forEach(jogo => {
-                const finalizado = jogo.sorteados.length === jogo.limite;
+                const listaSorteados = jogo.sorteados || [];
+                const finalizado = listaSorteados.length === jogo.limite;
                 const card = document.createElement('div');
                 card.className = 'card-jogo';
                 
-                // Estrutura visual do jogo na lista
                 card.innerHTML = `
                     <div class="card-info">
                         <h4>Bingo de 1 a ${jogo.limite}</h4>
                         <p>🗓️ ${jogo.dataCriacao}</p>
-                        <p>🎱 Sorteados: ${jogo.sorteados.length} / ${jogo.limite}</p>
+                        <p>🎱 Sorteados: ${listaSorteados.length} / ${jogo.limite}</p>
                     </div>
-                    <div>
-                        <button class="${finalizado ? 'btn-secundario' : 'btn-sucesso'} btn-acao" onclick="retomarJogo(${jogo.id})">
-                            ${finalizado ? '👁️ Ver Números' : '▶️ Continuar'}
+                    <div class="botoes-card">
+                        <button class="${finalizado ? 'btn-secundario' : 'btn-sucesso'} btn-acao" onclick="retomarJogo('${jogo.id}')">
+                            ${finalizado ? '👁️ Ver' : '▶️ Seguir'}
+                        </button>
+                        <button class="btn-lixeira" onclick="excluirJogo('${jogo.id}')" title="Apagar Jogo">
+                            🗑️
                         </button>
                     </div>
                 `;
@@ -449,16 +513,22 @@
             });
         }
 
-        // Função chamada pelo botão de continuar/ver no histórico
-        function retomarJogo(idDoJogo) {
-            const jogoEncontrado = todosOsJogos.find(j => j.id === idDoJogo);
+        window.retomarJogo = function(idDoJogo) {
+            const jogoEncontrado = window.todosOsJogos.find(j => j.id === idDoJogo);
             if (jogoEncontrado) {
-                carregarJogoNaTela(jogoEncontrado);
+                window.carregarJogoNaTela(jogoEncontrado);
             }
         }
 
-        // --- INICIALIZAÇÃO ---
-        renderizarUsuarios();
+        // --- FUNÇÃO DA LIXEIRA ---
+        window.excluirJogo = function(idDoJogo) {
+            if (confirm("Tem certeza que deseja apagar este jogo? Esta ação não pode ser desfeita.")) {
+                remove(ref(db, 'jogos/' + idDoJogo));
+            }
+        }
+
+        // --- INICIALIZAÇÃO DA PÁGINA ---
+        window.renderizarUsuarios();
 
     </script>
 </body>
