@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <script type="module">
+    import { db } from './firebase-config.js';
+    import { ref, set, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // Agora você pode usar 'db', 'ref', 'set' diretamente aqui!
+    // Exemplo para salvar:
+    // set(ref(db, 'jogos/' + idDoJogo), dadosDoJogo);
+    
+    // Exemplo para ler:
+    // onValue(ref(db, 'jogos/'), (snapshot) => { ... });
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bingo 3D - Sistema de Usuários</title>
